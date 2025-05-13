@@ -1,0 +1,25 @@
+[project]
+name = "phoenix-ai"
+version = "0.1.0"
+description = "GenAI library for RAG , MCP and Agentic AI"
+authors = [
+    {name = "Praveen Govindaraj",email = "38414524+Praveengovianalytics@users.noreply.github.com"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas (>=2.2.3,<3.0.0)",
+    "numpy (>=2.2.5,<3.0.0)",
+    "faiss-cpu (>=1.11.0,<2.0.0)",
+    "openai (>=1.78.1,<2.0.0)",
+    "nltk (>=3.9.1,<4.0.0)",
+    "scikit-learn (>=1.6.1,<2.0.0)",
+    "pymupdf (>=1.25.5,<2.0.0)",
+    "mlflow (>=2.22.0,<3.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
