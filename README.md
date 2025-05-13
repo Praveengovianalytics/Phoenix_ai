@@ -127,7 +127,7 @@ qa_df.to_csv("output/eval_dataset_ground_truth.csv", index=False)
 
 🔁 6. Apply RAG to Ground Truth Questions
 
-from phoenix_ai.rag_data_preparation import RagEvalDataPrep
+from phoenix_ai.rag_evaluation_data_prep import RagEvalDataPrep
 
 rag_data = RagEvalDataPrep(
     inferencer=rag_inferencer,
