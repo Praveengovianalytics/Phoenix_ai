@@ -3,7 +3,10 @@ import pandas as pd
 from typing import List
 from PyPDF2 import PdfReader
 import tiktoken
-
+from langchain_community.document_loaders import (
+    TextLoader, PyPDFLoader, UnstructuredWordDocumentLoader,
+    UnstructuredPowerPointLoader, UnstructuredExcelLoader
+)
 def _read_pdf(file_path: str) -> str:
     reader = PdfReader(file_path)
     text = ""
@@ -49,3 +52,34 @@ def load_and_process_single_document(folder_path: str, filename: str) -> pd.Data
         "chunk_id": list(range(len(chunks))),
         "content": chunks
     })
+
+def load_documents_to_dataframe(folder_path: str) -> pd.DataFrame:
+    """
+    Reads multiple documents (PDF or .txt), splits it into chunks, and returns a DataFrame.
+    
+    Returns:
+        DataFrame with columns: [filename, content]
+    """
+    supported_loaders = {
+        ".txt": TextLoader,
+        ".pdf": PyPDFLoader,
+        ".docx": UnstructuredWordDocumentLoader,
+        ".pptx": UnstructuredPowerPointLoader,
+        ".xlsx": UnstructuredExcelLoader
+    }
+
+    records = []
+    for filename in os.listdir(folder_path):
+        ext = os.path.splitext(filename)[-1].lower()
+        loader_class = supported_loaders.get(ext)
+        if loader_class:
+            print(f" Loading: {filename}")
+            loader = loader_class(os.path.join(folder_path, filename))
+            documents = loader.load()
+            for doc in documents:
+                records.append({
+                    "filename": filename,
+                    "content": doc.page_content.strip()
+                })
+
+    return pd.DataFrame(records)
