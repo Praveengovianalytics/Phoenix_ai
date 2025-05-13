@@ -90,7 +90,7 @@ df = load_and_process_single_document(folder_path="data/", filename="policy_doc.
 
 📌 3. Generate FAISS Vector Index
 
-from phoenix_ai.vector_embedding import VectorEmbedding
+from phoenix_ai.vector_embedding_pipeline import VectorEmbedding
 
 vector = VectorEmbedding(embedding_client)
 index_path, chunks = vector.generate_index(
@@ -115,7 +115,7 @@ response_df = rag_inferencer.infer(
 
 🧪 5. Generate Ground Truth Q&A from Document
 
-from phoenix_ai.eval_dataset_generator import EvalDatasetGroundTruthGenerator
+from phoenix_ai.eval_dataset_prep_ground_truth import EvalDatasetGroundTruthGenerator
 
 generator = EvalDatasetGroundTruthGenerator(chat_client)
 qa_df = generator.process_dataframe(

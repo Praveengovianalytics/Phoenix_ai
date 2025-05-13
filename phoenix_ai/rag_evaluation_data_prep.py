@@ -16,7 +16,7 @@ class RagEvalDataPrep:
                 top_k=top_k,
                 max_tokens=max_tokens
             )
-            print(f"Answer: {answer["answer"].iloc[0]}\n{'-' * 40}")
+            print(f"Answer: {answer['answer'].iloc[0]}\n{'-' * 40}")
             return answer["answer"].iloc[0]
         except Exception as e:
             print(f"Error generating answer for question '{question}': {e}")
