@@ -1,13 +1,13 @@
 [project]
 name = "phoenix-ai"
-version = "0.1.6"
+version = "0.1.7"
 description = "GenAI library for RAG , MCP and Agentic AI"
 authors = [
     {name = "Praveen Govindaraj",email = "38414524+Praveengovianalytics@users.noreply.github.com"}
 ]
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<4.0"
 dependencies = [
     "pandas (>=2.2.3,<3.0.0)",
     "numpy (>=2.2.5,<3.0.0)",
@@ -22,9 +22,9 @@ dependencies = [
     "python-docx (>=1.1.2,<2.0.0)",
     "openpyxl (>=3.1.5,<4.0.0)",
     "pypdf2 (>=3.0.1,<4.0.0)",
-    "tiktoken (>=0.9.0,<0.10.0)"
+    "tiktoken (>=0.9.0,<0.10.0)",
+    "langchain-community (>=0.3.24,<0.4.0)"
 ]
-
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
