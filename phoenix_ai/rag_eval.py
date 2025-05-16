@@ -4,6 +4,7 @@ import re
 import os
 from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction, sentence_bleu
 from sklearn.metrics import precision_score, recall_score, f1_score
+# from config_param import Param
 
 class RagEvaluator:
     def __init__(self, chat_client, experiment_name: str,):
