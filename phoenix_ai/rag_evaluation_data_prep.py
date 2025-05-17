@@ -1,23 +1,35 @@
+
 import pandas as pd
 
 class RagEvalDataPrep:
-    def __init__(self, inferencer, system_prompt: str, index_path: str):
+    def __init__(self, inferencer, system_prompt: str, index_type: str, index_path: str = None, index=None):
         self.inferencer = inferencer
         self.system_prompt = system_prompt
+        self.index_type = index_type
         self.index_path = index_path
+        self.index = index
 
     def _safe_generate_answer(self, question: str, top_k: int = 5, max_tokens: int = 256) -> str:
         try:
             print(f"Generating answer for: {question}")
-            answer = self.inferencer.infer(
-                system_prompt=self.system_prompt,
-                index_path=self.index_path,
-                question=question,
-                top_k=top_k,
-                max_tokens=max_tokens
-            )
-            #print(f"Answer: {answer['answer'].iloc[0]}\n{'-' * 40}")
-            return answer["answer"].iloc[0]
+            kwargs = {
+                "system_prompt": self.system_prompt,
+                "question": question,
+                "top_k": top_k,
+                "max_tokens": max_tokens,
+                "index_type": self.index_type
+            }
+
+            if self.index_type == "local_index":
+                kwargs["index_path"] = self.index_path
+            elif self.index_type == "databricks_vector_index":
+                kwargs["index"] = self.index
+            else:
+                raise ValueError(f"Unsupported index type: {self.index_type}")
+
+            answer_df = self.inferencer.infer(**kwargs)
+            return answer_df["answer"].iloc[0]
+
         except Exception as e:
             print(f"Error generating answer for question '{question}': {e}")
             return "Error generating answer"

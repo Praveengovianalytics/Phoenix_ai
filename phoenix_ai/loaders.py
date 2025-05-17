@@ -14,18 +14,31 @@ def _read_pdf(file_path: str) -> str:
         text += page.extract_text() or ""
     return text
 
-def _split_text(text: str, max_tokens: int = 300, overlap: int = 50) -> List[str]:
-    encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
-    tokens = encoding.encode(text)
+def _split_text(text: str, max_chars: int = 1000, overlap: int = 100) -> List[str]:
+    """
+    Split text into chunks based on character count.
 
+    Args:
+        text: Input text to split.
+        max_chars: Maximum characters per chunk (default: 1000).
+        overlap: Number of overlapping characters between chunks (default: 100).
+
+    Returns:
+        List of text chunks.
+    """
     chunks = []
     start = 0
-    while start < len(tokens):
-        end = min(start + max_tokens, len(tokens))
-        chunk = encoding.decode(tokens[start:end])
+    while start < len(text):
+        end = min(start + max_chars, len(text))
+        # Ensure we don't split in the middle of a word
+        if end < len(text):
+            while end > start and text[end] not in ' \n\t':
+                end -= 1
+            if end == start:
+                end = start + max_chars  # Fallback to hard cut if no space found
+        chunk = text[start:end]
         chunks.append(chunk)
-        start += max_tokens - overlap
-
+        start = end - overlap if end - overlap > start else start + max_chars
     return chunks
 
 def load_and_process_single_document(folder_path: str, filename: str) -> pd.DataFrame:

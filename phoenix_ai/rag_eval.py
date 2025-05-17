@@ -4,7 +4,7 @@ import re
 import os
 from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction, sentence_bleu
 from sklearn.metrics import precision_score, recall_score, f1_score
-from config_param import Param
+# from config_param import Param
 
 class RagEvaluator:
     def __init__(self, chat_client, experiment_name: str,):
@@ -46,7 +46,7 @@ class RagEvaluator:
         if max_rows:
             input_df = input_df.head(max_rows)
         if prompt is None:
-            prompt = prompt or Param.EVALUATION_PROMPT
+            prompt = prompt
 
         bleu_scores, semantic_similarities = [], []
         answer_relevance, accuracies, completenesses, clarities, explanations = [], [], [], [], []

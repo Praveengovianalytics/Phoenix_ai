@@ -47,15 +47,32 @@ class EvalDatasetGroundTruthGenerator:
         except Exception as e:
             print(f"Error during chat response: {e}")
             return None
-        
+
     def process_dataframe(self, df, text_column, prompt_template) -> pd.DataFrame:
         context_text = " ".join(df[text_column].tolist()).strip()
         prompt = prompt_template.format(context=context_text)
 
         qa_pairs = self._call_chat_client(prompt)
         if qa_pairs:
-            return pd.DataFrame(qa_pairs)
+            # Normalize keys in all dictionaries
+            normalized_qa_pairs = []
+            for item in qa_pairs:
+                normalized_item = {}
+                for k, v in item.items():
+                    # Normalize ground_truth, answer -> ground truth
+                    if k.strip().lower().replace("_", " ") == "ground truth":
+                        normalized_item["ground truth"] = v
+                    elif k.strip().lower() == "question":
+                        normalized_item["question"] = v
+                normalized_qa_pairs.append(normalized_item)
+
+            df_result = pd.DataFrame(normalized_qa_pairs)
+
+            # Ensure only expected columns are kept
+            expected_cols = ["question", "ground truth"]
+            df_result = df_result[[col for col in expected_cols if col in df_result.columns]]
+
+            return df_result
         else:
             print("⚠️ No Q&A pairs returned.")
-            # Return an empty DataFrame with expected columns to prevent downstream errors
             return pd.DataFrame(columns=["question", "ground truth"])

@@ -17,9 +17,18 @@ class RAGInferencer:
         embedding = self.embedding_client.generate_embedding([text])[0]
         return np.array([embedding], dtype="float32")
 
-    def _search_index(self, index, query_embedding: np.ndarray, k: int = 3) -> Tuple[np.ndarray, np.ndarray]:
+    def _search_faiss_index(self, index, query_embedding: np.ndarray, k: int = 3) -> Tuple[np.ndarray, np.ndarray]:
         distances, indices = index.search(query_embedding, k)
         return distances[0], indices[0]
+
+    def _search_databricks_index(self, index, query_embedding: np.ndarray, k: int = 3) -> List[str]:
+        response = index.similarity_search(
+            query_vector=query_embedding.tolist()[0],  # convert np.ndarray to list
+            columns=["content"],
+            num_results=k
+        )
+        return [str(row[1]) for row in response["result"]["data_array"]]  # ensure it's a string
+        # return [row[1] for row in response["result"]["data_array"]]  # row = [id, content, score]
 
     def _search_keyword(self, query: str, k: int = 3) -> List[Tuple[str, float]]:
         if self.keyword_search_client is None:
@@ -46,25 +55,41 @@ class RAGInferencer:
         with open(chunk_path, "rb") as f:
             return pickle.load(f)
 
-    def infer(self, system_prompt: str, index_path: str, question: str, top_k: int = 5, max_tokens: int = 256, mode: str = "standard") -> pd.DataFrame:
-        if not os.path.exists(index_path):
-            raise FileNotFoundError(f"FAISS index file not found: {index_path}")
+    def infer(self, system_prompt: str, question: str, top_k: int = 5, max_tokens: int = 256, mode: str = "standard", index_type: str = "local_index", index=None, index_path: Optional[str] = None) -> pd.DataFrame:
 
-        # Load FAISS index and chunks
-        index = faiss.read_index(index_path)
-        chunks = self._load_chunks(index_path)
+        query_embedding = self._get_query_embedding(question)
 
+        # Step 1: Retrieve documents
+        if index_type == "local_index":
+            if index_path is None or not os.path.exists(index_path):
+                raise FileNotFoundError(f"FAISS index file not found: {index_path}")
+
+            # Load FAISS index and chunks
+            index = faiss.read_index(index_path)
+            chunks = self._load_chunks(index_path)
+
+        elif index_type == "databricks_vector_index":
+            if index is None:
+                raise ValueError("Databricks vector search index must be provided")
+
+        else:
+            raise ValueError(f"Unsupported index_type: {index_type}")
+
+        # Step 2: Perform search
         if mode == "standard":
             # Standard RAG: Semantic search using question embedding
-            query_embedding = self._get_query_embedding(question)
-            distances, indices = self._search_index(index, query_embedding, k=top_k)
-            retrieved_docs = [chunks[i] for i in indices]
+            if index_type == "local_index":
+                distances, indices = self._search_faiss_index(index, query_embedding, k=top_k)
+                retrieved_docs = [chunks[i] for i in indices]
+            elif index_type == "databricks_vector_index":
+                retrieved_docs = self._search_databricks_index(index, query_embedding, k=top_k)
 
         elif mode == "hybrid":
             # Hybrid RAG: Combine semantic and keyword search
             # Semantic search
-            query_embedding = self._get_query_embedding(question)
-            distances, indices = self._search_index(index, query_embedding, k=top_k)
+            if index_type != "local_index":
+                raise NotImplementedError("Hybrid mode is only supported for FAISS/local index")
+            distances, indices = self._search_faiss_index(index, query_embedding, k=top_k)
             semantic_results = [(chunks[i], float(distances[rank])) for rank, i in enumerate(indices)]
             # Keyword search
             keyword_results = self._search_keyword(question, k=top_k)
@@ -80,13 +105,15 @@ class RAGInferencer:
                 max_tokens=max_tokens,
             )
             hyde_embedding = self._get_query_embedding(hypothetical_answer)
-            distances, indices = self._search_index(index, hyde_embedding, k=top_k)
-            retrieved_docs = [chunks[i] for i in indices]
-
+            if index_type == "local_index":
+                distances, indices = self._search_faiss_index(index, hyde_embedding, k=top_k)
+                retrieved_docs = [chunks[i] for i in indices]
+            elif index_type == "databricks_vector_index":
+                retrieved_docs = self._search_databricks_index(index, hyde_embedding, k=top_k)
         else:
             raise ValueError(f"Unsupported mode: {mode}")
 
-        # Build context and generate final answer
+        # Step 2: Build prompt and run generation
         context = self._build_context(retrieved_docs)
         prompt = f"Context:\n{context}\n\nQuestion: {question}"
         result = self.chat_client.chat(
@@ -96,10 +123,8 @@ class RAGInferencer:
         )
 
         print("RAG Answer:\n", result)
-        # Return as DataFrame
-        df = pd.DataFrame([{
+        return pd.DataFrame([{
             "retrieved_docs": retrieved_docs,
             "question": question,
             "answer": result
         }])
-        return df
