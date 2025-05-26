@@ -46,7 +46,7 @@ class VectorEmbedding:
 
     def generate_databricks_index(self, df: pd.DataFrame, content_column: str,
                               catalog: str, schema: str,
-                              endpoint_name: str, embedding_dim: int):
+                              endpoint_name: str, embedding_dim: int, index_name: str):
         # Filter and reset index
         df = df[df[content_column].astype(str).str.strip() != ''].reset_index(drop=True)
         df["id"] = df.index
@@ -62,7 +62,7 @@ class VectorEmbedding:
         df["embedding"] = embeddings
 
         # Create vector search index
-        index_name = f"{catalog}.{schema}.{endpoint_name}_index"
+        index_name = f"{catalog}.{schema}.{endpoint_name}_{index_name}"
         vs_client = VectorSearchClient()
 
         # Prepare records for upsert
@@ -101,14 +101,13 @@ class VectorEmbedding:
         except Exception as e:
             raise RuntimeError(f"Failed to upsert into Databricks index: {e}")
     
-    def generate_index(self, df: pd.DataFrame, text_column: str, index_path: str,
-                       vector_index_type: str = 'local_index', **kwargs):
+    def generate_index(self, df: pd.DataFrame, text_column: str, index_path: str, vector_index_type: str = 'local_index', **kwargs):
         if vector_index_type == 'local_index':
             if index_path is None:
                 raise ValueError("index_path must be specified for local_index type")
             return self.generate_faiss_index(df, text_column, index_path)
         elif vector_index_type == 'databricks_vector_index':
-            required_args = ['catalog', 'schema', 'endpoint_name', 'embedding_dim']
+            required_args = ['catalog', 'schema', 'endpoint_name', 'embedding_dim', 'index_name']
             missing_args = [arg for arg in required_args if arg not in kwargs]
             if missing_args:
                 raise ValueError(f"Missing arguments for Databricks index: {missing_args}")
@@ -118,7 +117,8 @@ class VectorEmbedding:
                 catalog=kwargs['catalog'],
                 schema=kwargs['schema'],
                 endpoint_name=kwargs['endpoint_name'],
-                embedding_dim=kwargs['embedding_dim']
+                embedding_dim=kwargs['embedding_dim'],
+                index_name=kwargs['index_name']
             )
         else:
             raise ValueError(f"Unsupported vector_index_type: {vector_index_type}")
