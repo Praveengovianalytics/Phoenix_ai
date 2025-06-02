@@ -6,17 +6,19 @@ import pandas as pd
 from databricks.vector_search.client import VectorSearchClient
 
 class VectorEmbedding:
-    def __init__(self, embedding_client):
+    def __init__(self, embedding_client,chunk_size,overlap):
         self.client = embedding_client
         self.embedding_model = embedding_client.model
+        self.chunk_size = chunk_size
+        self.overlap = overlap
 
-    def _chunk_text(self, text: str, chunk_size: int = 800, overlap: int = 100) -> list:
+    def _chunk_text(self, text: str) -> list:
         chunks = []
         start = 0
         while start < len(text):
-            end = start + chunk_size
+            end = start + self.chunk_size
             chunks.append(text[start:end])
-            start = end - overlap
+            start = end - self.overlap
         return chunks
 
     def _generate_embeddings(self, chunks: list) -> list:
