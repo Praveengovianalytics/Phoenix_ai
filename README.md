@@ -108,7 +108,7 @@ rag_inferencer = RAGInferencer(embedding_client, chat_client)
 response_df = rag_inferencer.infer(
     system_prompt=Param.get_rag_prompt(),
     index_path="output/policy_doc.index",
-    question="What is the purpose of the Singtel Group Data Classification Policy?",
+    question="What is the purpose of the company Group Data Classification Policy?",
     mode="standard",  # or "hybrid", "hyde"
     top_k=5
 )
