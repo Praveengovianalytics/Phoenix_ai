@@ -9,8 +9,10 @@ class VectorEmbedding:
     def __init__(self, embedding_client):
         self.client = embedding_client
         self.embedding_model = embedding_client.model
+        self.chunk_size = chunk_size
+        self.overlap = overlap
 
-    def _chunk_text(self, text: str, chunk_size: int = 800, overlap: int = 100) -> list:
+    def _chunk_text(self, text: str) -> list:
         chunks = []
         start = 0
         while start < len(text):
