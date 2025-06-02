@@ -92,7 +92,7 @@ df = load_and_process_single_document(folder_path="data/", filename="policy_doc.
 
 from phoenix_ai.vector_embedding_pipeline import VectorEmbedding
 
-vector = VectorEmbedding(embedding_client)
+vector = VectorEmbedding(embedding_client,chunk_size=500,overlap=50)
 index_path, chunks = vector.generate_index(
     df=df,
     text_column="content",
