@@ -9,7 +9,7 @@ class RagEvalDataPrep:
         self.index_path = index_path
         self.index = index
 
-    def _safe_generate_answer(self, question: str, top_k: int = 5, max_tokens: int = 256) -> str:
+    def _safe_generate_answer(self, question: str, top_k: int = 5, max_tokens: int = 256, mode: str = "standard") -> str:
         try:
             print(f"Generating answer for: {question}")
             kwargs = {
@@ -17,7 +17,8 @@ class RagEvalDataPrep:
                 "question": question,
                 "top_k": top_k,
                 "max_tokens": max_tokens,
-                "index_type": self.index_type
+                "index_type": self.index_type,
+                "mode": mode
             }
 
             if self.index_type == "local_index":
@@ -34,7 +35,7 @@ class RagEvalDataPrep:
             print(f"Error generating answer for question '{question}': {e}")
             return "Error generating answer"
         
-    def run_rag(self, input_df: pd.DataFrame, top_k: int = 5, limit: int = None) -> pd.DataFrame:
+    def run_rag(self, input_df: pd.DataFrame, top_k: int = 5, limit: int = None, mode: str = "standard") -> pd.DataFrame:
         # If a limit is set, trim the DataFrame
         if limit is not None:
             input_df = input_df.head(limit)
@@ -44,7 +45,7 @@ class RagEvalDataPrep:
             raise ValueError("Input DataFrame must contain a 'question' column.")
 
         # Create a new column for answers
-        input_df['answer'] = input_df['question'].apply(lambda question: self._safe_generate_answer(question, top_k=top_k))
+        input_df['answer'] = input_df['question'].apply(lambda question: self._safe_generate_answer(question, top_k=top_k, mode=mode))
 
         print(f"\n✅ Results generated for {len(input_df)} questions.")
         return input_df

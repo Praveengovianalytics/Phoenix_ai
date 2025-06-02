@@ -1,4 +1,6 @@
+
 import os
+import time
 from typing import Union, List, Dict
 from openai import OpenAI, AzureOpenAI
 
@@ -40,13 +42,39 @@ class GenAIEmbeddingClient:
         else:
             raise ValueError("Provider must be 'databricks', 'azure-openai', or 'openai'.")
 
-    def generate_embedding(self, input_text: List[str]) -> List[float]:
-        response = self.client.embeddings.create(
-            input=input_text,
-            model=self.model,
-            encoding_format="float"
-        )
-        return [item.embedding for item in response.data]
+    def generate_embedding(
+        self,
+        input_texts: List[str],
+        batch_size: int = 16,
+        max_retries: int = 5,
+        backoff_factor: float = 5.0
+    ) -> List[List[float]]:
+        all_embeddings = []
+        for i in range(0, len(input_texts), batch_size):
+            batch = input_texts[i:i+batch_size]
+            retries = 0
+            while retries <= max_retries:
+                try:
+                    response = self.client.embeddings.create(
+                        input=batch,
+                        model=self.model,
+                        encoding_format="float"
+                    )
+                    batch_embeddings = [item.embedding for item in response.data]
+                    all_embeddings.extend(batch_embeddings)
+                    break  # success
+                except Exception as e:
+                    err_str = str(e).lower()
+                    if "429" in err_str or "rate limit" in err_str:
+                        wait_time = backoff_factor * (2 ** retries)
+                        print(f"[Batch {i // batch_size + 1}] Rate limited. Retrying in {wait_time:.1f}s (attempt {retries + 1}/{max_retries})")
+                        time.sleep(wait_time)
+                        retries += 1
+                    else:
+                        raise e
+            else:
+                raise RuntimeError(f"Failed to get embeddings for batch after {max_retries} retries.")
+        return all_embeddings
 
 
 class GenAIChatClient:

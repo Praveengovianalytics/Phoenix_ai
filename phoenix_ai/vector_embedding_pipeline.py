@@ -45,6 +45,16 @@ class VectorEmbedding:
         print(f"FAISS index saved with {len(chunks)} chunks at {index_path}")
 
         return index_path, chunks
+    
+    def batched_upsert(self, index, records, batch_size=200):
+        for i in range(0, len(records), batch_size):
+            batch = records[i:i + batch_size]
+            try:
+                index.upsert(batch)
+                print(f"Upserted batch {i // batch_size + 1}: {len(batch)} records")
+            except Exception as e:
+                print(f"❌ Failed batch {i // batch_size + 1}: {e}")
+                raise
 
     def generate_databricks_index(self, df: pd.DataFrame, content_column: str,
                               catalog: str, schema: str,
@@ -98,7 +108,7 @@ class VectorEmbedding:
         try:
             index = vs_client.get_index(endpoint_name=endpoint_name, index_name=index_name)
             index.wait_until_ready()
-            index.upsert(records)
+            self.batched_upsert(index, records)
             print(f"Upserted {len(records)} records into index {index_name}")
         except Exception as e:
             raise RuntimeError(f"Failed to upsert into Databricks index: {e}")
