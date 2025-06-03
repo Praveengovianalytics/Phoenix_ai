@@ -48,31 +48,93 @@ class EvalDatasetGroundTruthGenerator:
             print(f"Error during chat response: {e}")
             return None
 
-    def process_dataframe(self, df, text_column, prompt_template) -> pd.DataFrame:
-        context_text = " ".join(df[text_column].tolist()).strip()
-        prompt = prompt_template.format(context=context_text)
+    def count_batches(self, df: pd.DataFrame, text_column: str = "content", max_chars: int = 10000) -> int:
+        current_length = 0
+        batch_count = 0
+        current_batch = []
 
-        qa_pairs = self._call_chat_client(prompt)
-        if qa_pairs:
-            # Normalize keys in all dictionaries
-            normalized_qa_pairs = []
-            for item in qa_pairs:
-                normalized_item = {}
-                for k, v in item.items():
-                    # Normalize ground_truth, answer -> ground truth
-                    if k.strip().lower().replace("_", " ") == "ground truth":
-                        normalized_item["ground truth"] = v
-                    elif k.strip().lower() == "question":
-                        normalized_item["question"] = v
-                normalized_qa_pairs.append(normalized_item)
+        for row_text in df[text_column]:
+            row_text = row_text.strip()
+            if not row_text:
+                continue
+            row_len = len(row_text)
 
-            df_result = pd.DataFrame(normalized_qa_pairs)
+            if current_length + row_len > max_chars and current_batch:
+                batch_count += 1
+                current_batch = [row_text]
+                current_length = row_len
+            else:
+                current_batch.append(row_text)
+                current_length += row_len
 
-            # Ensure only expected columns are kept
-            expected_cols = ["question", "ground truth"]
-            df_result = df_result[[col for col in expected_cols if col in df_result.columns]]
+        if current_batch:
+            batch_count += 1
 
-            return df_result
-        else:
+        return batch_count
+
+
+    def process_dataframe(self, df: pd.DataFrame, text_column: str = "content", max_chars: int = 10000, prompt_template: str = "", max_total_pairs = None) -> pd.DataFrame:
+        # Smart chunking based on character limit
+        all_qa_pairs = []
+        current_batch = []
+        current_length = 0
+
+        batch_count = self.count_batches(df, text_column="content", max_chars=10000)
+        print(f"📦 Estimated total batches to send: {batch_count}")
+
+
+        for row_text in df[text_column]:
+            row_text = row_text.strip()
+            if not row_text:
+                continue
+            row_len = len(row_text)
+
+            if current_length + row_len > max_chars and current_batch:
+                context_text = " ".join(current_batch)
+                prompt = prompt_template.format(context=context_text)
+                qa_pairs = self._call_chat_client(prompt)
+                
+                # Check limit before adding
+                if max_total_pairs is not None:
+                    remaining = max_total_pairs - len(all_qa_pairs)
+                    if remaining <= 0:
+                        break
+                    qa_pairs = qa_pairs[:remaining]
+
+                all_qa_pairs.extend(qa_pairs)
+
+                if max_total_pairs is not None and len(all_qa_pairs) >= max_total_pairs:
+                    break
+                
+                current_batch = [row_text]
+                current_length = row_len
+            else:
+                current_batch.append(row_text)
+                current_length += row_len
+
+        # Final batch
+        if current_batch and (max_total_pairs is None or len(all_qa_pairs) < max_total_pairs):
+            context_text = " ".join(current_batch)
+            prompt = prompt_template.format(context=context_text)
+            qa_pairs = self._call_chat_client(prompt)
+
+            if max_total_pairs is not None:
+                remaining = max_total_pairs - len(all_qa_pairs)
+                qa_pairs = qa_pairs[:remaining]
+
+            all_qa_pairs.extend(qa_pairs)
+
+        if not all_qa_pairs:
             print("⚠️ No Q&A pairs returned.")
-            return pd.DataFrame(columns=["question", "ground truth"])
+        else:
+            # Normalize keys (e.g., fix inconsistent naming of 'ground_truth' vs 'ground truth')
+            normalized_qa_pairs = []
+            for pair in all_qa_pairs:
+                normalized_pair = {**pair}
+                if "ground_truth" in normalized_pair:
+                    normalized_pair["ground truth"] = normalized_pair.pop("ground_truth")
+                normalized_qa_pairs.append(normalized_pair)
+                print(f"✅ Total Q&A pairs generated: {len(normalized_qa_pairs)}")
+
+        return pd.DataFrame(normalized_qa_pairs)
+        
