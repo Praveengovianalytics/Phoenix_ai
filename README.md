@@ -96,7 +96,8 @@ vector = VectorEmbedding(embedding_client,chunk_size=500,overlap=50)
 index_path, chunks = vector.generate_index(
     df=df,
     text_column="content",
-    index_path="output/policy_doc.index"
+    index_path="output/policy_doc.index",
+    vector_index_type='local_index'
 )
 
 💬 4. Perform RAG Inference (Standard, Hybrid, HyDE)
@@ -121,7 +122,8 @@ generator = EvalDatasetGroundTruthGenerator(chat_client)
 qa_df = generator.process_dataframe(
     df=df,
     text_column="content",
-    prompt_template=Param.get_ground_truth_prompt()
+    prompt_template=Param.get_ground_truth_prompt(),
+    max_total_pairs=50
 )
 qa_df.to_csv("output/eval_dataset_ground_truth.csv", index=False)
 
@@ -132,6 +134,7 @@ from phoenix_ai.rag_evaluation_data_prep import RagEvalDataPrep
 rag_data = RagEvalDataPrep(
     inferencer=rag_inferencer,
     system_prompt=Param.get_rag_prompt(),
+    index_type="local_index",
     index_path="output/policy_doc.index"
 )
 
