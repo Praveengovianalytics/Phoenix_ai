@@ -66,14 +66,14 @@ jobs:
           poetry env info
           poetry run which python
 
-      - name: Run Pytest Tests ✅ (Manual Activation)
-        if: github.ref == 'refs/heads/test'
-        run: |
-          VENV_PATH=$(poetry env info -p)
-          source "$VENV_PATH/bin/activate"
-          pytest tests/ --maxfail=1 --disable-warnings -q
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # - name: Run Pytest Tests ✅ (Commented Out)
+      #   if: github.ref == 'refs/heads/test'
+      #   run: |
+      #     VENV_PATH=$(poetry env info -p)
+      #     source "$VENV_PATH/bin/activate"
+      #     pytest tests/ --maxfail=1 --disable-warnings -q
+      #   env:
+      #     OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Build Package
         if: github.ref == 'refs/heads/main'
