@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   format-build-publish:
-    if: github.event.head_commit.message != '' && startsWith(github.event.head_commit.message, 'Merge pull request') && contains(github.event.head_commit.message, 'from test')
+    if: contains(github.event.head_commit.message, 'from test') || contains(github.event.head_commit.message, 'Merge branch') || contains(github.event.head_commit.message, 'test')
     runs-on: ubuntu-latest
 
     steps:
