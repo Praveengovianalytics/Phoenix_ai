@@ -11,7 +11,8 @@ permissions:
   id-token: write
 
 jobs:
-  format-test-build-publish:
+  format-test:
+    if: github.ref == 'refs/heads/test'
     runs-on: ubuntu-latest
 
     steps:
@@ -48,7 +49,6 @@ jobs:
         continue-on-error: true
 
       - name: Bump Version (patch)
-        if: github.ref == 'refs/heads/test'
         run: |
           poetry version patch
           git config user.name "github-actions"
@@ -56,36 +56,47 @@ jobs:
           git add pyproject.toml
           git commit -m "🔖 Bump version for testing"
           git push
+        continue-on-error: true
 
       - name: Install Dependencies
         run: poetry install --no-root
 
-      - name: Show Poetry Environment (Debug)
-        if: github.ref == 'refs/heads/test'
-        run: |
-          poetry env info
-          poetry run which python
-
-      # - name: Run Pytest Tests ✅ (Commented Out)
-      #   if: github.ref == 'refs/heads/test'
+      # - name: Run Tests (if needed)
       #   run: |
       #     VENV_PATH=$(poetry env info -p)
       #     source "$VENV_PATH/bin/activate"
-      #     pytest tests/ --maxfail=1 --disable-warnings -q
-      #   env:
-      #     OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      #     pytest tests/
 
-      - name: Build Package
-        if: github.ref == 'refs/heads/main'
+  build-publish:
+    if: github.ref == 'refs/heads/main'
+    needs: format-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install Dependencies
+        run: poetry install --no-root
+
+      - name: Build Package 📦
         run: poetry build
 
       - name: Upload Artifacts
-        if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: release-dists
           path: dist/
 
-      - name: Publish to PyPI
-        if: github.ref == 'refs/heads/main'
+      - name: Publish to PyPI 🚀
         run: poetry publish --username __token__ --password ${{ secrets.PYPI_API_TOKEN }} --no-interaction
