@@ -25,6 +25,11 @@ class VectorEmbedding:
         return self.client.generate_embedding(chunks)
 
     def generate_faiss_index(self, df: pd.DataFrame, text_column: str, index_path: str):
+        # Validate that the directory of index_path exists
+        dir_path = os.path.dirname(index_path)
+        if dir_path and not os.path.exists(dir_path):
+            raise FileNotFoundError(f"The directory '{dir_path}' does not exist. Please provide a valid index_path.")
+
         all_text = "\n".join(df[text_column].dropna().astype(str).tolist())
         chunks = self._chunk_text(all_text)
         embeddings = self._generate_embeddings(chunks)
@@ -45,6 +50,7 @@ class VectorEmbedding:
         print(f"FAISS index saved with {len(chunks)} chunks at {index_path}")
 
         return index_path, chunks
+
     
     def batched_upsert(self, index, records, batch_size=200):
         for i in range(0, len(records), batch_size):
