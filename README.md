@@ -1,6 +1,6 @@
 # 🔥 phoenix_ai
 
-**phoenix_ai** is a modular Python library designed for GenAI tasks like-----:
+**phoenix_ai** is a modular Python library designed for GenAI tasks like-------:
 
 - 🔍 Vector embedding with FAISS
 - 🤖 RAG Inference (Standard / Hybrid / HyDE)
