@@ -31,7 +31,7 @@ jobs:
       - name: Install Tools
         run: |
           python -m pip install --upgrade pip
-          pip install black isort pytest
+          pip install black isort
 
       - name: Run black and isort
         run: |
@@ -59,6 +59,12 @@ jobs:
 
       - name: Install Dependencies
         run: poetry install --no-root
+
+      - name: Show Poetry Environment (Debug)
+        if: github.ref == 'refs/heads/test'
+        run: |
+          poetry env info
+          poetry run which python
 
       - name: Run Pytest Tests ✅
         if: github.ref == 'refs/heads/test'
