@@ -12,10 +12,6 @@ permissions:
 
 jobs:
   format-test-build-publish:
-    if: |
-      contains(github.event.head_commit.message, 'from test') ||
-      contains(github.event.head_commit.message, 'Merge branch') ||
-      contains(github.event.head_commit.message, 'test')
     runs-on: ubuntu-latest
 
     steps:
@@ -52,27 +48,27 @@ jobs:
         continue-on-error: true
 
       - name: Bump Version (patch)
-        if: github.ref == 'refs/heads/main'  # 🔒 Only bump on main
+        if: github.ref == 'refs/heads/test'  # ✅ Only bump version in test
         run: |
           poetry version patch
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add pyproject.toml
-          git commit -m "🔖 Bump version for release"
+          git commit -m "🔖 Bump version for testing"
           git push
 
       - name: Install Dependencies
         run: poetry install --no-root
 
       - name: Run Pytest Tests ✅
-        if: github.ref == 'refs/heads/test'  # 🔒 Only run on test branch
+        if: github.ref == 'refs/heads/test'
         run: |
           poetry run pytest tests/ --maxfail=1 --disable-warnings -q
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Build Package
-        if: github.ref == 'refs/heads/main'  # 🔒 Only build for publishing on main
+        if: github.ref == 'refs/heads/main'  # ✅ Only build for main
         run: poetry build
 
       - name: Upload Artifacts
