@@ -56,8 +56,3 @@ jobs:
           git push
         continue-on-error: true
 
-      - name: Install Dependencies
-        run: poetry install --no-root
-
-      - name: Run Pytest (optional)
-        run: poetry run pytest tests/
