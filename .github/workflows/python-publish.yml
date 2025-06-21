@@ -63,7 +63,7 @@ jobs:
       - name: Run Pytest Tests ✅
         if: github.ref == 'refs/heads/test'
         run: |
-          poetry run pytest tests/ --maxfail=1 --disable-warnings -q
+          poetry run pytest test/ --maxfail=1 --disable-warnings -q
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
