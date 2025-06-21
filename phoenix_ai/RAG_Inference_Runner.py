@@ -1,6 +1,7 @@
-from utils import GenAIEmbeddingClient, GenAIChatClient
-from rag_inference import RAGInferencer
 from config_param import Param
+from rag_inference import RAGInferencer
+from utils import GenAIChatClient, GenAIEmbeddingClient
+
 
 class RAGInferenceRunner:
     def __init__(
@@ -21,7 +22,7 @@ class RAGInferenceRunner:
             api_key=api_key,
             api_version=api_version,
             azure_endpoint=azure_endpoint,
-            base_url=base_url
+            base_url=base_url,
         )
 
         self.chat_client = GenAIChatClient(
@@ -30,7 +31,7 @@ class RAGInferenceRunner:
             api_key=api_key,
             api_version=api_version,
             azure_endpoint=azure_endpoint,
-            base_url=base_url
+            base_url=base_url,
         )
 
         self.rag_inferencer = RAGInferencer(self.embedding_client, self.chat_client)
@@ -41,7 +42,7 @@ class RAGInferenceRunner:
         index_path: str,
         system_prompt: str = None,
         top_k: int = 5,
-        mode: str = "standard"
+        mode: str = "standard",
     ) -> pd.DataFrame:
         if system_prompt is None:
             system_prompt = Param.get_rag_prompt()
@@ -51,5 +52,5 @@ class RAGInferenceRunner:
             index_path=index_path,
             question=question,
             mode=mode,
-            top_k=top_k
+            top_k=top_k,
         )

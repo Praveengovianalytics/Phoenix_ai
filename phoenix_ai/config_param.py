@@ -50,7 +50,7 @@ class Param:
     ### Generated Answer:
     {generated_answer}
     """
-    
+
     @staticmethod
     def get_rag_prompt():
         return Param.RAG_PROMPT
