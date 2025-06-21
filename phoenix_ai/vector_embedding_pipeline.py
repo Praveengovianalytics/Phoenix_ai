@@ -1,12 +1,14 @@
 import os
-import numpy as np
-import faiss
 import pickle
+
+import faiss
+import numpy as np
 import pandas as pd
 from databricks.vector_search.client import VectorSearchClient
 
+
 class VectorEmbedding:
-    def __init__(self, embedding_client,chunk_size,overlap):
+    def __init__(self, embedding_client, chunk_size, overlap):
         self.client = embedding_client
         self.embedding_model = embedding_client.model
         self.chunk_size = chunk_size
@@ -28,7 +30,9 @@ class VectorEmbedding:
         # Validate that the directory of index_path exists
         dir_path = os.path.dirname(index_path)
         if dir_path and not os.path.exists(dir_path):
-            raise FileNotFoundError(f"The directory '{dir_path}' does not exist. Please provide a valid index_path.")
+            raise FileNotFoundError(
+                f"The directory '{dir_path}' does not exist. Please provide a valid index_path."
+            )
 
         all_text = "\n".join(df[text_column].dropna().astype(str).tolist())
         chunks = self._chunk_text(all_text)
@@ -51,10 +55,9 @@ class VectorEmbedding:
 
         return index_path, chunks
 
-    
     def batched_upsert(self, index, records, batch_size=200):
         for i in range(0, len(records), batch_size):
-            batch = records[i:i + batch_size]
+            batch = records[i : i + batch_size]
             try:
                 index.upsert(batch)
                 print(f"Upserted batch {i // batch_size + 1}: {len(batch)} records")
@@ -62,16 +65,23 @@ class VectorEmbedding:
                 print(f"❌ Failed batch {i // batch_size + 1}: {e}")
                 raise
 
-    def generate_databricks_index(self, df: pd.DataFrame, content_column: str,
-                              catalog: str, schema: str,
-                              endpoint_name: str, embedding_dim: int, index_name: str):
+    def generate_databricks_index(
+        self,
+        df: pd.DataFrame,
+        content_column: str,
+        catalog: str,
+        schema: str,
+        endpoint_name: str,
+        embedding_dim: int,
+        index_name: str,
+    ):
         # Filter and reset index
-        df = df[df[content_column].astype(str).str.strip() != ''].reset_index(drop=True)
+        df = df[df[content_column].astype(str).str.strip() != ""].reset_index(drop=True)
         df["id"] = df.index
 
         # Generate embeddings
         contents = df[content_column].astype(str).tolist()
-        contents = [c for c in contents if c.strip() != '']
+        contents = [c for c in contents if c.strip() != ""]
 
         print(f"Generating embeddings for {len(contents)} texts")
         print(f"Sample content: {contents[:3]}")
@@ -84,15 +94,13 @@ class VectorEmbedding:
         vs_client = VectorSearchClient()
 
         # Prepare records for upsert
-        records = df[["id", content_column, "embedding"]].rename(
-            columns={content_column: "content"}
-        ).to_dict(orient="records")
+        records = (
+            df[["id", content_column, "embedding"]]
+            .rename(columns={content_column: "content"})
+            .to_dict(orient="records")
+        )
 
-        index_schema = {
-            "id": "int",
-            "content": "string",
-            "embedding": "array<float>"
-        }
+        index_schema = {"id": "int", "content": "string", "embedding": "array<float>"}
 
         # Create the index if it doesn't exist
         try:
@@ -102,7 +110,7 @@ class VectorEmbedding:
                 primary_key="id",
                 embedding_dimension=embedding_dim,
                 embedding_vector_column="embedding",
-                schema=index_schema
+                schema=index_schema,
             )
         except Exception as e:
             # If index exists, get the existing one
@@ -112,31 +120,48 @@ class VectorEmbedding:
                 raise e
 
         try:
-            index = vs_client.get_index(endpoint_name=endpoint_name, index_name=index_name)
+            index = vs_client.get_index(
+                endpoint_name=endpoint_name, index_name=index_name
+            )
             index.wait_until_ready()
             self.batched_upsert(index, records)
             print(f"Upserted {len(records)} records into index {index_name}")
         except Exception as e:
             raise RuntimeError(f"Failed to upsert into Databricks index: {e}")
-    
-    def generate_index(self, df: pd.DataFrame, text_column: str, index_path: str, vector_index_type: str = 'local_index', **kwargs):
-        if vector_index_type == 'local_index':
+
+    def generate_index(
+        self,
+        df: pd.DataFrame,
+        text_column: str,
+        index_path: str,
+        vector_index_type: str = "local_index",
+        **kwargs,
+    ):
+        if vector_index_type == "local_index":
             if index_path is None:
                 raise ValueError("index_path must be specified for local_index type")
             return self.generate_faiss_index(df, text_column, index_path)
-        elif vector_index_type == 'databricks_vector_index':
-            required_args = ['catalog', 'schema', 'endpoint_name', 'embedding_dim', 'index_name']
+        elif vector_index_type == "databricks_vector_index":
+            required_args = [
+                "catalog",
+                "schema",
+                "endpoint_name",
+                "embedding_dim",
+                "index_name",
+            ]
             missing_args = [arg for arg in required_args if arg not in kwargs]
             if missing_args:
-                raise ValueError(f"Missing arguments for Databricks index: {missing_args}")
+                raise ValueError(
+                    f"Missing arguments for Databricks index: {missing_args}"
+                )
             return self.generate_databricks_index(
                 df=df,
                 content_column=text_column,
-                catalog=kwargs['catalog'],
-                schema=kwargs['schema'],
-                endpoint_name=kwargs['endpoint_name'],
-                embedding_dim=kwargs['embedding_dim'],
-                index_name=kwargs['index_name']
+                catalog=kwargs["catalog"],
+                schema=kwargs["schema"],
+                endpoint_name=kwargs["endpoint_name"],
+                embedding_dim=kwargs["embedding_dim"],
+                index_name=kwargs["index_name"],
             )
         else:
             raise ValueError(f"Unsupported vector_index_type: {vector_index_type}")

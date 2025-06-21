@@ -1,11 +1,12 @@
 import os
-import pandas as pd
 from typing import List
-from PyPDF2 import PdfReader
+
+import pandas as pd
 from langchain_community.document_loaders import (
-    TextLoader, PyPDFLoader, UnstructuredWordDocumentLoader,
-    UnstructuredPowerPointLoader, UnstructuredExcelLoader
-)
+    PyPDFLoader, TextLoader, UnstructuredExcelLoader,
+    UnstructuredPowerPointLoader, UnstructuredWordDocumentLoader)
+from PyPDF2 import PdfReader
+
 
 # Ensure the data directory exists
 def ensure_folder_exists(folder_path: str):
@@ -14,6 +15,7 @@ def ensure_folder_exists(folder_path: str):
     except Exception as e:
         print(f"❌ Failed to create folder {folder_path}: {e}")
         raise
+
 
 def _read_pdf(file_path: str) -> str:
     try:
@@ -25,13 +27,14 @@ def _read_pdf(file_path: str) -> str:
     except Exception as e:
         raise FileNotFoundError(f"❌ Failed to read PDF file {file_path}: {e}")
 
+
 def _split_text(text: str, max_chars: int = 1000, overlap: int = 100) -> List[str]:
     chunks = []
     start = 0
     while start < len(text):
         end = min(start + max_chars, len(text))
         if end < len(text):
-            while end > start and text[end] not in ' \n\t':
+            while end > start and text[end] not in " \n\t":
                 end -= 1
             if end == start:
                 end = start + max_chars
@@ -39,6 +42,7 @@ def _split_text(text: str, max_chars: int = 1000, overlap: int = 100) -> List[st
         chunks.append(chunk)
         start = end - overlap if end - overlap > start else start + max_chars
     return chunks
+
 
 def load_and_process_single_document(folder_path: str, filename: str) -> pd.DataFrame:
     ensure_folder_exists(folder_path)
@@ -61,16 +65,21 @@ def load_and_process_single_document(folder_path: str, filename: str) -> pd.Data
             ]
             full_text = "\n".join(rows_as_text)
         else:
-            raise ValueError("❌ Unsupported file type. Only .pdf, .txt, and .csv are supported.")
+            raise ValueError(
+                "❌ Unsupported file type. Only .pdf, .txt, and .csv are supported."
+            )
     except Exception as e:
         raise ValueError(f"❌ Error reading {filename}: {e}")
 
     chunks = _split_text(full_text)
-    return pd.DataFrame({
-        "filename": [filename] * len(chunks),
-        "chunk_id": list(range(len(chunks))),
-        "content": chunks
-    })
+    return pd.DataFrame(
+        {
+            "filename": [filename] * len(chunks),
+            "chunk_id": list(range(len(chunks))),
+            "content": chunks,
+        }
+    )
+
 
 def load_documents_to_dataframe(folder_path: str) -> pd.DataFrame:
     ensure_folder_exists(folder_path)
@@ -80,7 +89,7 @@ def load_documents_to_dataframe(folder_path: str) -> pd.DataFrame:
         ".pdf": PyPDFLoader,
         ".docx": UnstructuredWordDocumentLoader,
         ".pptx": UnstructuredPowerPointLoader,
-        ".xlsx": UnstructuredExcelLoader
+        ".xlsx": UnstructuredExcelLoader,
     }
 
     records = []
@@ -107,20 +116,18 @@ def load_documents_to_dataframe(folder_path: str) -> pd.DataFrame:
                 excel_data = pd.read_excel(file_path, sheet_name=None)
                 for sheet_name, sheet_df in excel_data.items():
                     content = sheet_df.to_string(index=False)
-                    records.append({
-                        "filename": f"{filename}::{sheet_name}",
-                        "content": content
-                    })
+                    records.append(
+                        {"filename": f"{filename}::{sheet_name}", "content": content}
+                    )
 
             elif ext in supported_loaders:
                 print(f"📘 Loading with LangChain loader: {filename}")
                 loader = supported_loaders[ext](file_path)
                 documents = loader.load()
                 for doc in documents:
-                    records.append({
-                        "filename": filename,
-                        "content": doc.page_content.strip()
-                    })
+                    records.append(
+                        {"filename": filename, "content": doc.page_content.strip()}
+                    )
 
             elif ext == ".txt":
                 print(f"📝 Loading TXT: {filename}")

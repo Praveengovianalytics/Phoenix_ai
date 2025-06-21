@@ -1,15 +1,16 @@
 import os
-import pytest
+
 import pandas as pd
+import pytest
 
-from phoenix_ai.utils import GenAIEmbeddingClient, GenAIChatClient
-from phoenix_ai.loaders import load_documents_to_dataframe
-from phoenix_ai.vector_embedding_pipeline import VectorEmbedding
-from phoenix_ai.rag_inference import RAGInferencer
 from phoenix_ai.config_param import Param
-
+from phoenix_ai.loaders import load_documents_to_dataframe
+from phoenix_ai.rag_inference import RAGInferencer
+from phoenix_ai.utils import GenAIChatClient, GenAIEmbeddingClient
+from phoenix_ai.vector_embedding_pipeline import VectorEmbedding
 
 # ======== Fixtures ========
+
 
 @pytest.fixture(scope="module")
 def api_key():
@@ -33,19 +34,13 @@ def sample_question():
 @pytest.fixture(scope="module")
 def embedding_client(api_key):
     return GenAIEmbeddingClient(
-        provider="openai",
-        model="text-embedding-ada-002",
-        api_key=api_key
+        provider="openai", model="text-embedding-ada-002", api_key=api_key
     )
 
 
 @pytest.fixture(scope="module")
 def chat_client(api_key):
-    return GenAIChatClient(
-        provider="openai",
-        model="gpt-4o",
-        api_key=api_key
-    )
+    return GenAIChatClient(provider="openai", model="gpt-4o", api_key=api_key)
 
 
 @pytest.fixture(scope="module")
@@ -60,14 +55,13 @@ def vector_index(test_dataframe, embedding_client):
     index_path = "index/test_policy.index"
     vector = VectorEmbedding(embedding_client, chunk_size=500, overlap=50)
     index_path, chunks = vector.generate_index(
-        df=test_dataframe,
-        text_column="content",
-        index_path=index_path
+        df=test_dataframe, text_column="content", index_path=index_path
     )
     return index_path, chunks
 
 
 # ======== Tests ========
+
 
 def test_embedding_generation(embedding_client, sample_text):
     embedding = embedding_client.generate_embedding(sample_text)
@@ -109,7 +103,7 @@ def test_rag_inference(embedding_client, chat_client, vector_index):
         index_path=index_path,
         question="Can you summarize?",
         mode="standard",
-        top_k=3
+        top_k=3,
     )
     assert isinstance(response_df, pd.DataFrame)
     assert "response" in response_df.columns

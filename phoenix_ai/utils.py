@@ -1,8 +1,9 @@
-
 import os
 import time
-from typing import Union, List, Dict
-from openai import OpenAI, AzureOpenAI
+from typing import Dict, List, Union
+
+from openai import AzureOpenAI, OpenAI
+
 
 class GenAIEmbeddingClient:
     def __init__(
@@ -12,7 +13,7 @@ class GenAIEmbeddingClient:
         base_url: str = None,
         api_key: str = None,
         api_version: str = None,
-        azure_endpoint: str = None
+        azure_endpoint: str = None,
     ):
         """
         Initializes the embedding client for OpenAI (public), Databricks, or Azure.
@@ -23,42 +24,39 @@ class GenAIEmbeddingClient:
         self.api_key = api_key
 
         if self.provider == "databricks":
-            self.client = OpenAI(
-                api_key=self.api_key,
-                base_url=base_url
-            )
+            self.client = OpenAI(api_key=self.api_key, base_url=base_url)
         elif self.provider == "azure-openai":
             if not all([api_key, api_version, azure_endpoint]):
-                raise ValueError("Azure requires api_key, api_version, and azure_endpoint.")
+                raise ValueError(
+                    "Azure requires api_key, api_version, and azure_endpoint."
+                )
             self.client = AzureOpenAI(
-                api_key=api_key,
-                api_version=api_version,
-                azure_endpoint=azure_endpoint
+                api_key=api_key, api_version=api_version, azure_endpoint=azure_endpoint
             )
         elif self.provider == "openai":
             if not api_key:
                 raise ValueError("OpenAI provider requires api_key.")
             self.client = OpenAI(api_key=api_key)
         else:
-            raise ValueError("Provider must be 'databricks', 'azure-openai', or 'openai'.")
+            raise ValueError(
+                "Provider must be 'databricks', 'azure-openai', or 'openai'."
+            )
 
     def generate_embedding(
         self,
         input_texts: List[str],
         batch_size: int = 16,
         max_retries: int = 5,
-        backoff_factor: float = 5.0
+        backoff_factor: float = 5.0,
     ) -> List[List[float]]:
         all_embeddings = []
         for i in range(0, len(input_texts), batch_size):
-            batch = input_texts[i:i+batch_size]
+            batch = input_texts[i : i + batch_size]
             retries = 0
             while retries <= max_retries:
                 try:
                     response = self.client.embeddings.create(
-                        input=batch,
-                        model=self.model,
-                        encoding_format="float"
+                        input=batch, model=self.model, encoding_format="float"
                     )
                     batch_embeddings = [item.embedding for item in response.data]
                     all_embeddings.extend(batch_embeddings)
@@ -66,14 +64,18 @@ class GenAIEmbeddingClient:
                 except Exception as e:
                     err_str = str(e).lower()
                     if "429" in err_str or "rate limit" in err_str:
-                        wait_time = backoff_factor * (2 ** retries)
-                        print(f"[Batch {i // batch_size + 1}] Rate limited. Retrying in {wait_time:.1f}s (attempt {retries + 1}/{max_retries})")
+                        wait_time = backoff_factor * (2**retries)
+                        print(
+                            f"[Batch {i // batch_size + 1}] Rate limited. Retrying in {wait_time:.1f}s (attempt {retries + 1}/{max_retries})"
+                        )
                         time.sleep(wait_time)
                         retries += 1
                     else:
                         raise e
             else:
-                raise RuntimeError(f"Failed to get embeddings for batch after {max_retries} retries.")
+                raise RuntimeError(
+                    f"Failed to get embeddings for batch after {max_retries} retries."
+                )
         return all_embeddings
 
 
@@ -86,7 +88,7 @@ class GenAIChatClient:
         base_url: str = None,
         api_key: str = None,
         api_version: str = None,
-        azure_endpoint: str = None
+        azure_endpoint: str = None,
     ):
         """
         Initializes the chat client for OpenAI (public), Azure, or Databricks.
@@ -99,23 +101,24 @@ class GenAIChatClient:
 
         if self.provider == "azure-openai":
             if not all([api_key, api_version, azure_endpoint]):
-                raise ValueError("Azure requires api_key, api_version, and azure_endpoint.")
+                raise ValueError(
+                    "Azure requires api_key, api_version, and azure_endpoint."
+                )
             self.client = AzureOpenAI(
                 api_key=api_key,
                 api_version=api_version,
                 azure_endpoint=azure_endpoint,
             )
         elif self.provider == "databricks":
-            self.client = OpenAI(
-                api_key=self.api_key,
-                base_url=base_url
-            )
+            self.client = OpenAI(api_key=self.api_key, base_url=base_url)
         elif self.provider == "openai":
             if not api_key:
                 raise ValueError("OpenAI provider requires api_key.")
             self.client = OpenAI(api_key=api_key)
         else:
-            raise ValueError("Provider must be 'azure-openai', 'databricks', or 'openai'.")
+            raise ValueError(
+                "Provider must be 'azure-openai', 'databricks', or 'openai'."
+            )
 
     def chat(
         self,
@@ -123,14 +126,14 @@ class GenAIChatClient:
         system_prompt: str = None,
         max_tokens: int = 1024,
         temperature: float = 1.0,
-        top_k: float = 1.0
+        top_k: float = 1.0,
     ) -> str:
         system_prompt = system_prompt or self.system_prompt
 
         if isinstance(user_input, str):
             messages = [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_input}
+                {"role": "user", "content": user_input},
             ]
         else:
             messages = user_input
@@ -139,6 +142,6 @@ class GenAIChatClient:
             model=self.model,
             messages=messages,
             max_tokens=max_tokens,
-            temperature=temperature
+            temperature=temperature,
         )
         return response.choices[0].message.content
