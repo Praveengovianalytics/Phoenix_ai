@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/phoenix_logo.png" alt="Phoenix AI" width="280" />
+</p>
+
 # 🔥 phoenix_ai
 
 **phoenix_ai** is a modular Python library designed for GenAI tasks like-------:
@@ -9,7 +13,7 @@
 - 📊 MLflow logging of evaluation metrics
 
 Supports:  
-🧠 OpenAI | ☁️ Azure OpenAI | 💼 Databricks Model Serving
+🧠 OpenAI | ☁️ Azure OpenAI | 💼 Databricks Model Serving | 🏠 Ollama (local) | 🔓 Sentence Transformers (local embeddings)
 
 ---
 
@@ -19,17 +23,13 @@ Supports:
 git clone https://github.com/your-org/phoenix_ai.git
 cd phoenix_ai
 poetry install
-
-
-# 🔥 phoenix_ai
-
-A modular Python library for building Generative AI applications using RAG (Retrieval-Augmented Generation), evaluation datasets, and LLM-as-a-Judge scoring. Supports OpenAI, Azure OpenAI, and Databricks.
+```
 
 ---
 
 ## ⚙️ 1. Configure Embedding & Chat Clients
 
-Supports `openai`, `azure-openai`, and `databricks` as providers.
+Supports `openai`, `azure-openai`, `databricks`, `ollama` (local), and `sentence-transformer` (local embeddings).
 
 ### ▶️ OpenAI
 ```python
@@ -37,22 +37,22 @@ from phoenix_ai.utils import GenAIEmbeddingClient, GenAIChatClient
 
 embedding_client = GenAIEmbeddingClient(
     provider="openai",
-    model="text-embedding-ada-002",
+    model="text-embedding-3-large",
     api_key="your-openai-key"
 )
 
 chat_client = GenAIChatClient(
     provider="openai",
-    model="gpt-4",
+    model="gpt-4o",
     api_key="your-openai-key"
 )
+```
 
-
-☁️ Azure OpenAI
-
+### ☁️ Azure OpenAI
+```python
 embedding_client = GenAIEmbeddingClient(
     provider="azure-openai",
-    model="text-embedding-ada-002",
+    model="text-embedding-3-large",
     api_key="your-azure-key",
     api_version="2024-06-01",
     azure_endpoint="https://<your-endpoint>.openai.azure.com"
@@ -60,12 +60,15 @@ embedding_client = GenAIEmbeddingClient(
 
 chat_client = GenAIChatClient(
     provider="azure-openai",
-    model="gpt-4",
+    model="gpt-4o",
     api_key="your-azure-key",
     api_version="2024-06-01",
     azure_endpoint="https://<your-endpoint>.openai.azure.com"
 )
+```
 
+### 💼 Databricks Model Serving
+```python
 embedding_client = GenAIEmbeddingClient(
     provider="databricks",
     model="bge_large_en_v1_5",
@@ -79,29 +82,64 @@ chat_client = GenAIChatClient(
     base_url="https://<your-databricks-url>",
     api_key="your-databricks-token"
 )
+```
 
+### 🏠 Ollama (Local LLM)
+```bash
+ollama serve &
+ollama pull llama3.1
+```
+```python
+from phoenix_ai.utils import GenAIChatClient
 
-📂 2. Load and Process Documents
+chat_client = GenAIChatClient(
+    provider="ollama",
+    model="llama3.1",  # or another local model
+    # base_url defaults to http://localhost:11434/v1
+)
+print(chat_client.chat("Hello Phoenix!"))
+```
 
+### 🔓 Sentence Transformers (Free Local Embeddings)
+```bash
+pip install "sentence-transformers>=2.6.1,<3.0.0"
+ollama pull nomic-embed-text  # optional if you also want local embeddings via Ollama
+```
+```python
+from phoenix_ai.utils import GenAIEmbeddingClient
+
+embedding_client = GenAIEmbeddingClient(
+    provider="sentence-transformer",
+    model="all-MiniLM-L6-v2",  # or any sentence-transformers model
+    device="cpu"               # or "cuda"
+)
+embeddings = embedding_client.generate_embedding(["hello", "world"]) 
+```
+
+---
+
+## 📂 2. Load and Process Documents
+```python
 from phoenix_ai.loaders import load_and_process_single_document
 
 df = load_and_process_single_document(folder_path="data/", filename="policy_doc.pdf")
+```
 
-
-📌 3. Generate FAISS Vector Index
-
+## 📌 3. Generate FAISS Vector Index
+```python
 from phoenix_ai.vector_embedding_pipeline import VectorEmbedding
 
-vector = VectorEmbedding(embedding_client,chunk_size=500,overlap=50)
+vector = VectorEmbedding(embedding_client, chunk_size=500, overlap=50)
 index_path, chunks = vector.generate_index(
     df=df,
     text_column="content",
     index_path="output/policy_doc.index",
-    vector_index_type='local_index'
+    vector_index_type="local_index"
 )
+```
 
-💬 4. Perform RAG Inference (Standard, Hybrid, HyDE)
-
+## 💬 4. Perform RAG Inference (Standard, Hybrid, HyDE)
+```python
 from phoenix_ai.rag_inference import RAGInferencer
 from phoenix_ai.param import Param
 
@@ -113,9 +151,10 @@ response_df = rag_inferencer.infer(
     mode="standard",  # or "hybrid", "hyde"
     top_k=5
 )
+```
 
-🧪 5. Generate Ground Truth Q&A from Document
-
+## 🧪 5. Generate Ground Truth Q&A from Document
+```python
 from phoenix_ai.eval_dataset_prep_ground_truth import EvalDatasetGroundTruthGenerator
 
 generator = EvalDatasetGroundTruthGenerator(chat_client)
@@ -126,9 +165,10 @@ qa_df = generator.process_dataframe(
     max_total_pairs=50
 )
 qa_df.to_csv("output/eval_dataset_ground_truth.csv", index=False)
+```
 
-🔁 6. Apply RAG to Ground Truth Questions
-
+## 🔁 6. Apply RAG to Ground Truth Questions
+```python
 from phoenix_ai.rag_evaluation_data_prep import RagEvalDataPrep
 
 rag_data = RagEvalDataPrep(
@@ -140,10 +180,10 @@ rag_data = RagEvalDataPrep(
 
 result_df = rag_data.run_rag(input_df=qa_df, limit=5)
 result_df.to_csv("output/eval_dataset_rag_output.csv", index=False)
+```
 
-
-📊 7. Evaluate RAG Output with LLM-as-a-Judge
-
+## 📊 7. Evaluate RAG Output with LLM-as-a-Judge
+```python
 from phoenix_ai.rag_eval import RagEvaluator
 
 evaluator = RagEvaluator(chat_client, experiment_name="/Users/yourname/LLM_Answer_Evaluation")
@@ -157,8 +197,6 @@ df_eval, metrics = evaluator.evaluate(
 
 df_eval.to_csv("output/eval_dataset_rag_eval.csv", index=False)
 
-# Print metrics
 for k, v in metrics.items():
     print(f"{k}: {v:.4f}")
-
 ```

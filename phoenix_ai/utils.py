@@ -14,9 +14,10 @@ class GenAIEmbeddingClient:
         api_key: str = None,
         api_version: str = None,
         azure_endpoint: str = None,
+        device: str = "cpu",
     ):
         """
-        Initializes the embedding client for OpenAI (public), Databricks, or Azure.
+        Initializes the embedding client for OpenAI (public), Databricks, Azure, Ollama, or Sentence Transformers.
         """
         self.provider = provider.lower()
         self.model = model
@@ -37,9 +38,25 @@ class GenAIEmbeddingClient:
             if not api_key:
                 raise ValueError("OpenAI provider requires api_key.")
             self.client = OpenAI(api_key=api_key)
+        elif self.provider == "ollama":
+            # Ollama exposes an OpenAI-compatible API at /v1 by default on localhost:11434
+            self.client = OpenAI(
+                api_key=api_key or "ollama",
+                base_url=base_url or "http://localhost:11434/v1",
+            )
+        elif self.provider == "sentence-transformer":
+            try:
+                from sentence_transformers import SentenceTransformer  # type: ignore
+            except Exception as import_error:  # pragma: no cover - optional dependency
+                raise ImportError(
+                    "Install sentence-transformers to use the 'sentence-transformer' provider: pip install sentence-transformers"
+                ) from import_error
+
+            # Initialize local sentence-transformers model (CPU or CUDA)
+            self._st_model = SentenceTransformer(self.model, device=device)
         else:
             raise ValueError(
-                "Provider must be 'databricks', 'azure-openai', or 'openai'."
+                "Provider must be 'databricks', 'azure-openai', 'openai', 'ollama', or 'sentence-transformer'."
             )
 
     def generate_embedding(
@@ -49,6 +66,10 @@ class GenAIEmbeddingClient:
         max_retries: int = 5,
         backoff_factor: float = 5.0,
     ) -> List[List[float]]:
+        # Local provider path for Sentence Transformers
+        if self.provider == "sentence-transformer":
+            return self._sentence_transformer_embedding(input_texts, batch_size=batch_size)
+
         all_embeddings = []
         for i in range(0, len(input_texts), batch_size):
             batch = input_texts[i : i + batch_size]
@@ -78,6 +99,23 @@ class GenAIEmbeddingClient:
                 )
         return all_embeddings
 
+    def _sentence_transformer_embedding(
+        self,
+        input_texts: List[str],
+        batch_size: int = 32,
+        **_: Dict,
+    ) -> List[List[float]]:
+        """Generate embeddings locally using Sentence Transformers."""
+        # convert_to_numpy yields a numpy array; tolist() returns List[List[float]]
+        return (
+            self._st_model.encode(
+                input_texts,
+                batch_size=batch_size,
+                convert_to_numpy=True,
+                show_progress_bar=False,
+            ).tolist()
+        )
+
 
 class GenAIChatClient:
     def __init__(
@@ -91,7 +129,7 @@ class GenAIChatClient:
         azure_endpoint: str = None,
     ):
         """
-        Initializes the chat client for OpenAI (public), Azure, or Databricks.
+        Initializes the chat client for OpenAI (public), Azure, Databricks, or Ollama.
         """
         self.provider = provider.lower()
         self.model = model
@@ -115,9 +153,15 @@ class GenAIChatClient:
             if not api_key:
                 raise ValueError("OpenAI provider requires api_key.")
             self.client = OpenAI(api_key=api_key)
+        elif self.provider == "ollama":
+            # Ollama exposes an OpenAI-compatible API at /v1 by default on localhost:11434
+            self.client = OpenAI(
+                api_key=api_key or "ollama",
+                base_url=base_url or "http://localhost:11434/v1",
+            )
         else:
             raise ValueError(
-                "Provider must be 'azure-openai', 'databricks', or 'openai'."
+                "Provider must be 'azure-openai', 'databricks', 'openai', or 'ollama'."
             )
 
     def chat(
