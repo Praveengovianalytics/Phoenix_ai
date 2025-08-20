@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/phoenix_logo.png" alt="Phoenix AI" width="280" />
+  <img src="assets/phoenix_logo.jpeg" alt="Phoenix AI" width="280" />
 </p>
 
 # 🔥 phoenix_ai
