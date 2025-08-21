@@ -173,7 +173,7 @@ index_path, chunks = vector.generate_index(
 ## 💬 4. Perform RAG Inference (Standard, Hybrid, HyDE)
 ```python
 from phoenix_ai.rag_inference import RAGInferencer
-from phoenix_ai.param import Param
+from phoenix_ai.config_param import Param
 
 rag_inferencer = RAGInferencer(embedding_client, chat_client)
 response_df = rag_inferencer.infer(
