@@ -19,10 +19,42 @@ Supports:
 
 ## 📦 Installation
 
+### Prerequisites
+- Python 3.11+
+- Poetry installed (recommended). If you don't have Poetry, install it using one of the options below.
+
+### Install Poetry (choose one)
+```bash
+# Homebrew (macOS)
+brew install poetry
+
+# pipx (recommended for Python CLIs)
+brew install pipx
+pipx ensurepath
+pipx install poetry
+
+# pip (user install)
+python3 -m pip install --user poetry
+# fish shell: ensure ~/.local/bin is on PATH
+set -Ux fish_user_paths $HOME/.local/bin $fish_user_paths
+```
+
+### Clone and install
 ```bash
 git clone https://github.com/Praveengovianalytics/Phoenix_ai.git
 cd Phoenix_ai
 poetry install
+# optional: activate the venv
+poetry shell
+```
+
+### Alternative: pip + venv (without Poetry)
+```bash
+git clone https://github.com/Praveengovianalytics/Phoenix_ai.git
+cd Phoenix_ai
+python3 -m venv .venv
+source .venv/bin/activate  # fish: source .venv/bin/activate.fish
+pip install -e .
 ```
 
 ---
