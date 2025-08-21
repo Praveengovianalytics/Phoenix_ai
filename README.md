@@ -20,8 +20,8 @@ Supports:
 ## 📦 Installation
 
 ```bash
-git clone https://github.com/your-org/phoenix_ai.git
-cd phoenix_ai
+git clone https://github.com/Praveengovianalytics/Phoenix_ai.git
+cd Phoenix_ai
 poetry install
 ```
 
