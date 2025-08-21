@@ -1,4 +1,3 @@
-import os
 import time
 from typing import Dict, List, Union
 
@@ -189,3 +188,4 @@ class GenAIChatClient:
             temperature=temperature,
         )
         return response.choices[0].message.content
+

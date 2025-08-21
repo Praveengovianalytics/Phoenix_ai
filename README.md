@@ -200,3 +200,67 @@ df_eval.to_csv("output/eval_dataset_rag_eval.csv", index=False)
 for k, v in metrics.items():
     print(f"{k}: {v:.4f}")
 ```
+
+---
+
+## 🔧 8. Tools and Agent Loop (Provider‑Agnostic)
+
+Phoenix now supports a provider‑agnostic tool system. You can define tools once and run them with any provider via adapters:
+
+- OpenAI‑compatible providers (OpenAI, Azure OpenAI, Databricks, Ollama OpenAI API): use `OpenAIStyleAdapter`
+- Any provider without native tools: use `JsonFunctionAdapter` (model emits a JSON plan)
+
+### Define a tool
+```python
+from phoenix_ai import Tool
+
+def calculator(expression: str) -> str:
+    return str(eval(expression, {"__builtins__": {}}, {}))
+
+tools = [
+    Tool(
+        name="calculator",
+        description="Evaluate arithmetic expressions.",
+        parameters={
+            "type": "object",
+            "properties": {"expression": {"type": "string"}},
+            "required": ["expression"],
+        },
+        function=calculator,
+    )
+]
+```
+
+### Use with OpenAI‑compatible providers
+```python
+from phoenix_ai import GenAIChatClient, OpenAIStyleAdapter, run_agent_loop
+
+chat = GenAIChatClient(provider="openai", model="gpt-4o", api_key="...")
+adapter = OpenAIStyleAdapter(chat.client, chat.model)
+
+messages = [{"role": "user", "content": "What is (12*3)+5? Use the calculator."}]
+answer = run_agent_loop(adapter=adapter, messages=messages, tools=tools)
+print(answer)
+```
+
+### Use with providers without native tools
+```python
+from phoenix_ai import GenAIChatClient, JsonFunctionAdapter, run_agent_loop
+
+chat = GenAIChatClient(provider="openai", model="gpt-4o", api_key="...")
+
+def send_chat(messages):
+    # Sends plain chat messages and returns the assistant content string
+    return chat.chat(messages)
+
+adapter = JsonFunctionAdapter(send_chat=send_chat)
+
+messages = [{"role": "user", "content": "What is (12*3)+5? Use tools if needed."}]
+answer = run_agent_loop(adapter=adapter, messages=messages, tools=tools)
+print(answer)
+```
+
+Notes:
+- Tools are defined once via `Tool` and can be reused across adapters/providers.
+- `OpenAIStyleAdapter` requires providers that support OpenAI function/tool calling.
+- `JsonFunctionAdapter` works universally by instructing the model to output a JSON plan.
