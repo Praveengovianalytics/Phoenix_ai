@@ -2,18 +2,100 @@
   <img src="assets/phoenix_logo.jpeg" alt="Phoenix AI" width="280" />
 </p>
 
-# 🔥 phoenix_ai
+# 🔥 Phoenix_ai
 
-**phoenix_ai** is a modular Python library designed for GenAI tasks like-------:
+**From prototype to production in GenAI workflows 🚀**
 
-- 🔍 Vector embedding with FAISS
-- 🤖 RAG Inference (Standard / Hybrid / HyDE)
-- 📄 Ground truth Q&A generation from documents
-- 🧪 Answer evaluation using BLEU + LLM-as-a-Judge (ChatGPT or Claude)
-- 📊 MLflow logging of evaluation metrics
+A modular Python library for ML Engineers 🧑‍💻, AI Engineers 🤖, and Software Engineers ⚙️ to build, evaluate, and scale retrieval-augmented generation (RAG), embeddings, and agentic tools — across OpenAI, Azure, Databricks, Ollama, and more.
 
-Supports:  
-🧠 OpenAI | ☁️ Azure OpenAI | 💼 Databricks Model Serving | 🏠 Ollama (local) | 🔓 Sentence Transformers (local embeddings)
+> ✨ Provider-agnostic • Evaluation-ready • Agentic by design
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/Praveengovianalytics/Phoenix_ai/actions)
+[![PyPI Version](https://img.shields.io/badge/pypi-v0.1.0-blue.svg)](https://pypi.org/project/phoenix-ai/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+
+---
+
+## 📋 Project Overview
+
+Phoenix_ai is an open-source, modular Python library that bridges the gap between research prototypes and enterprise-grade AI applications. Built with production-ready architecture, it provides a unified interface for building, evaluating, and scaling GenAI workflows across multiple providers and deployment environments.
+
+---
+
+## 🚀 Key Capabilities
+
+### 🔎 **Vector Embedding & Search**
+- Multi-provider embedding generation (OpenAI, Azure, Databricks, Sentence Transformers)
+- FAISS-based vector indexing with configurable chunking strategies
+- Local and cloud-based vector storage options
+- Optimized similarity search with customizable top-k retrieval
+
+### 📚 **Retrieval-Augmented Generation (RAG)**
+- Standard, Hybrid, and HyDE (Hypothetical Document Embedding) modes
+- Configurable system prompts and retrieval parameters
+- Multi-document context processing
+- Real-time inference with streaming support
+
+### 📝 **Ground-Truth QA Generation & Evaluation**
+- Automated question-answer pair generation from documents
+- BLEU score evaluation for answer quality
+- LLM-as-a-Judge evaluation using ChatGPT or Claude
+- MLflow integration for experiment tracking and metrics logging
+
+### 🛠️ **Agentic Tooling System**
+- Provider-agnostic tool definition and execution
+- OpenAI-compatible function calling across all supported providers
+- JSON-based planning for providers without native tool support
+- Modular tool architecture for easy extension and customization
+
+### 🌐 **Provider-Agnostic Design**
+- Unified API across OpenAI, Azure OpenAI, Databricks, and Ollama
+- Seamless switching between local and cloud deployments
+- Consistent interface regardless of underlying provider
+- Future-proof architecture for new provider integrations
+
+---
+
+## 🔄 Typical Workflow
+
+1. **Install & Configure** - Set up Phoenix_ai with your preferred providers and authentication
+2. **Load & Process Docs** - Import and chunk your documents for vector processing
+3. **Embed & Index** - Generate embeddings and create searchable vector indices
+4. **RAG Inference** - Perform retrieval-augmented generation with your indexed documents
+5. **QA Generation & Eval** - Create evaluation datasets and assess RAG performance
+6. **Agentic Tools** - Build and deploy intelligent agents with custom tooling
+
+---
+
+## 💡 Why Phoenix_ai?
+
+### 🧑‍💻 **For ML Engineers**
+- Production-ready evaluation frameworks with built-in metrics
+- Seamless integration with MLflow for experiment tracking
+- Configurable hyperparameters for embedding and retrieval optimization
+- Automated ground-truth generation for model validation
+
+### 🤖 **For AI Engineers**
+- Rapid prototyping with multiple RAG strategies
+- Provider flexibility to test across different LLM ecosystems
+- Built-in evaluation pipelines for model comparison
+- Agentic tooling for complex reasoning tasks
+
+### ⚙️ **For Software Engineers**
+- Modular architecture for easy integration into existing systems
+- Consistent APIs across different providers and deployment models
+- Comprehensive error handling and logging
+- Scalable design patterns for enterprise applications
+
+---
+
+## 🎯 Summary
+
+Phoenix_ai empowers engineers to move from raw ideas → working prototypes → enterprise-grade AI systems. With modular design, provider flexibility, and built-in evaluation, it's the one-stop library for reliable, scalable, and auditable GenAI workflows.
+
+Whether you're building your first RAG application or scaling AI systems for millions of users, Phoenix_ai provides the tools, evaluation frameworks, and architectural patterns you need to succeed in the rapidly evolving GenAI landscape.
 
 ---
 
@@ -21,9 +103,9 @@ Supports:
 
 ### Prerequisites
 - Python 3.11+
-- Poetry installed (recommended). If you don't have Poetry, install it using one of the options below.
+- Poetry installed (recommended)
 
-### Install Poetry (choose one)
+### Install Poetry
 ```bash
 # Homebrew (macOS)
 brew install poetry
@@ -35,20 +117,17 @@ pipx install poetry
 
 # pip (user install)
 python3 -m pip install --user poetry
-# fish shell: ensure ~/.local/bin is on PATH
-set -Ux fish_user_paths $HOME/.local/bin $fish_user_paths
 ```
 
-### Clone and install
+### Clone and Install
 ```bash
 git clone https://github.com/Praveengovianalytics/Phoenix_ai.git
 cd Phoenix_ai
 poetry install
-# optional: activate the venv
-poetry shell
+poetry shell  # optional: activate the venv
 ```
 
-### Alternative: pip + venv (without Poetry)
+### Alternative: pip + venv
 ```bash
 git clone https://github.com/Praveengovianalytics/Phoenix_ai.git
 cd Phoenix_ai
@@ -59,14 +138,14 @@ pip install -e .
 
 ---
 
-## ⚙️ 1. Configure Embedding & Chat Clients
+## ⚙️ Quick Start
 
-Supports `openai`, `azure-openai`, `databricks`, `ollama` (local), and `sentence-transformer` (local embeddings).
+### 1. Configure Embedding & Chat Clients
 
-### ▶️ OpenAI
 ```python
 from phoenix_ai.utils import GenAIEmbeddingClient, GenAIChatClient
 
+# OpenAI
 embedding_client = GenAIEmbeddingClient(
     provider="openai",
     model="text-embedding-3-large",
@@ -80,84 +159,19 @@ chat_client = GenAIChatClient(
 )
 ```
 
-### ☁️ Azure OpenAI
-```python
-embedding_client = GenAIEmbeddingClient(
-    provider="azure-openai",
-    model="text-embedding-3-large",
-    api_key="your-azure-key",
-    api_version="2024-06-01",
-    azure_endpoint="https://<your-endpoint>.openai.azure.com"
-)
+### 2. Load and Process Documents
 
-chat_client = GenAIChatClient(
-    provider="azure-openai",
-    model="gpt-4o",
-    api_key="your-azure-key",
-    api_version="2024-06-01",
-    azure_endpoint="https://<your-endpoint>.openai.azure.com"
-)
-```
-
-### 💼 Databricks Model Serving
-```python
-embedding_client = GenAIEmbeddingClient(
-    provider="databricks",
-    model="bge_large_en_v1_5",
-    base_url="https://<your-databricks-url>",
-    api_key="your-databricks-token"
-)
-
-chat_client = GenAIChatClient(
-    provider="databricks",
-    model="databricks-claude-3-7-sonnet",
-    base_url="https://<your-databricks-url>",
-    api_key="your-databricks-token"
-)
-```
-
-### 🏠 Ollama (Local LLM)
-```bash
-ollama serve &
-ollama pull llama3.1
-```
-```python
-from phoenix_ai.utils import GenAIChatClient
-
-chat_client = GenAIChatClient(
-    provider="ollama",
-    model="llama3.1",  # or another local model
-    # base_url defaults to http://localhost:11434/v1
-)
-print(chat_client.chat("Hello Phoenix!"))
-```
-
-### 🔓 Sentence Transformers (Free Local Embeddings)
-```bash
-pip install "sentence-transformers>=2.6.1,<3.0.0"
-ollama pull nomic-embed-text  # optional if you also want local embeddings via Ollama
-```
-```python
-from phoenix_ai.utils import GenAIEmbeddingClient
-
-embedding_client = GenAIEmbeddingClient(
-    provider="sentence-transformer",
-    model="all-MiniLM-L6-v2",  # or any sentence-transformers model
-    device="cpu"               # or "cuda"
-)
-embeddings = embedding_client.generate_embedding(["hello", "world"]) 
-```
-
----
-
-## 📂 2. Load and Process Documents
 ```python
 from phoenix_ai.loaders import load_and_process_single_document
 
-df = load_and_process_single_document(folder_path="data/", filename="policy_doc.pdf")
+df = load_and_process_single_document(
+    folder_path="data/", 
+    filename="policy_doc.pdf"
+)
 ```
 
-## 📌 3. Generate FAISS Vector Index
+### 3. Generate Vector Index
+
 ```python
 from phoenix_ai.vector_embedding_pipeline import VectorEmbedding
 
@@ -170,7 +184,8 @@ index_path, chunks = vector.generate_index(
 )
 ```
 
-## 💬 4. Perform RAG Inference (Standard, Hybrid, HyDE)
+### 4. Perform RAG Inference
+
 ```python
 from phoenix_ai.rag_inference import RAGInferencer
 from phoenix_ai.config_param import Param
@@ -185,7 +200,8 @@ response_df = rag_inferencer.infer(
 )
 ```
 
-## 🧪 5. Generate Ground Truth Q&A from Document
+### 5. Generate Evaluation Dataset
+
 ```python
 from phoenix_ai.eval_dataset_prep_ground_truth import EvalDatasetGroundTruthGenerator
 
@@ -196,38 +212,19 @@ qa_df = generator.process_dataframe(
     prompt_template=Param.get_ground_truth_prompt(),
     max_total_pairs=50
 )
-qa_df.to_csv("output/eval_dataset_ground_truth.csv", index=False)
 ```
 
-## 🔁 6. Apply RAG to Ground Truth Questions
-```python
-from phoenix_ai.rag_evaluation_data_prep import RagEvalDataPrep
+### 6. Evaluate RAG Performance
 
-rag_data = RagEvalDataPrep(
-    inferencer=rag_inferencer,
-    system_prompt=Param.get_rag_prompt(),
-    index_type="local_index",
-    index_path="output/policy_doc.index"
-)
-
-result_df = rag_data.run_rag(input_df=qa_df, limit=5)
-result_df.to_csv("output/eval_dataset_rag_output.csv", index=False)
-```
-
-## 📊 7. Evaluate RAG Output with LLM-as-a-Judge
 ```python
 from phoenix_ai.rag_eval import RagEvaluator
 
-evaluator = RagEvaluator(chat_client, experiment_name="/Users/yourname/LLM_Answer_Evaluation")
-df_input = result_df
-
+evaluator = RagEvaluator(chat_client, experiment_name="rag_evaluation")
 df_eval, metrics = evaluator.evaluate(
-    input_df=df_input,
+    input_df=result_df,
     prompt=Param.get_evaluation_prompt(),
     max_rows=5
 )
-
-df_eval.to_csv("output/eval_dataset_rag_eval.csv", index=False)
 
 for k, v in metrics.items():
     print(f"{k}: {v:.4f}")
@@ -235,64 +232,26 @@ for k, v in metrics.items():
 
 ---
 
-## 🔧 8. Tools and Agent Loop (Provider‑Agnostic)
+## 🛠️ Supported Providers
 
-Phoenix now supports a provider‑agnostic tool system. You can define tools once and run them with any provider via adapters:
+- **🧠 OpenAI** - GPT-4, GPT-3.5, text-embedding models
+- **☁️ Azure OpenAI** - Enterprise-grade OpenAI services
+- **💼 Databricks** - Model serving and MosaicML integration
+- **🏠 Ollama** - Local LLM deployment and inference
+- **🔓 Sentence Transformers** - Free local embedding generation
 
-- OpenAI‑compatible providers (OpenAI, Azure OpenAI, Databricks, Ollama OpenAI API): use `OpenAIStyleAdapter`
-- Any provider without native tools: use `JsonFunctionAdapter` (model emits a JSON plan)
+---
 
-### Define a tool
-```python
-from phoenix_ai import Tool
+## 📚 Documentation
 
-def calculator(expression: str) -> str:
-    return str(eval(expression, {"__builtins__": {}}, {}))
+For detailed usage examples, API reference, and advanced configurations, please refer to the project documentation and code examples in the repository.
 
-tools = [
-    Tool(
-        name="calculator",
-        description="Evaluate arithmetic expressions.",
-        parameters={
-            "type": "object",
-            "properties": {"expression": {"type": "string"}},
-            "required": ["expression"],
-        },
-        function=calculator,
-    )
-]
-```
+---
 
-### Use with OpenAI‑compatible providers
-```python
-from phoenix_ai import GenAIChatClient, OpenAIStyleAdapter, run_agent_loop
+## 🤝 Contributing
 
-chat = GenAIChatClient(provider="openai", model="gpt-4o", api_key="...")
-adapter = OpenAIStyleAdapter(chat.client, chat.model)
+We welcome contributions! Please see our contributing guidelines and feel free to submit pull requests or open issues for bugs and feature requests.
 
-messages = [{"role": "user", "content": "What is (12*3)+5? Use the calculator."}]
-answer = run_agent_loop(adapter=adapter, messages=messages, tools=tools)
-print(answer)
-```
+## 📄 License
 
-### Use with providers without native tools
-```python
-from phoenix_ai import GenAIChatClient, JsonFunctionAdapter, run_agent_loop
-
-chat = GenAIChatClient(provider="openai", model="gpt-4o", api_key="...")
-
-def send_chat(messages):
-    # Sends plain chat messages and returns the assistant content string
-    return chat.chat(messages)
-
-adapter = JsonFunctionAdapter(send_chat=send_chat)
-
-messages = [{"role": "user", "content": "What is (12*3)+5? Use tools if needed."}]
-answer = run_agent_loop(adapter=adapter, messages=messages, tools=tools)
-print(answer)
-```
-
-Notes:
-- Tools are defined once via `Tool` and can be reused across adapters/providers.
-- `OpenAIStyleAdapter` requires providers that support OpenAI function/tool calling.
-- `JsonFunctionAdapter` works universally by instructing the model to output a JSON plan.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
