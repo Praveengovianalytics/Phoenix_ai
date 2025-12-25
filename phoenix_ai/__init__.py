@@ -1,5 +1,6 @@
-from .utils import GenAIEmbeddingClient, GenAIChatClient
-from .tools import Tool, OpenAIStyleAdapter, JsonFunctionAdapter, run_agent_loop
+from .tools import (JsonFunctionAdapter, OpenAIStyleAdapter, Tool,
+                    run_agent_loop)
+from .utils import GenAIChatClient, GenAIEmbeddingClient
 
 __all__ = [
     "GenAIEmbeddingClient",
@@ -9,4 +10,3 @@ __all__ = [
     "JsonFunctionAdapter",
     "run_agent_loop",
 ]
-

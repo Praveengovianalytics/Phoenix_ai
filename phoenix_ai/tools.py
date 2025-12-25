@@ -84,9 +84,7 @@ class OpenAIStyleAdapter:
                 args = json.loads(tc.function.arguments or "{}")
             except Exception:
                 args = {"_raw": tc.function.arguments}
-            tool_calls.append(
-                ToolCall(id=tc.id, name=tc.function.name, arguments=args)
-            )
+            tool_calls.append(ToolCall(id=tc.id, name=tc.function.name, arguments=args))
         if tool_calls:
             return None, tool_calls
         return message.content or "", []
@@ -122,8 +120,8 @@ class JsonFunctionAdapter:
 
         instruction = (
             "You can call tools. Decide next step and reply with a JSON object only.\n"
-            "If you need a tool: {\"tool_calls\": [{\"name\": \"...\", \"arguments\": {...}}]}\n"
-            "If you can answer directly: {\"final_answer\": \"...\"}.\n"
+            'If you need a tool: {"tool_calls": [{"name": "...", "arguments": {...}}]}\n'
+            'If you can answer directly: {"final_answer": "..."}.\n'
             f"Available tools: {json.dumps(tool_descriptions)}"
         )
 
@@ -138,7 +136,11 @@ class JsonFunctionAdapter:
 
         if isinstance(parsed, dict) and "tool_calls" in parsed:
             tool_calls = [
-                ToolCall(id=str(i), name=tc.get("name", ""), arguments=tc.get("arguments", {}))
+                ToolCall(
+                    id=str(i),
+                    name=tc.get("name", ""),
+                    arguments=tc.get("arguments", {}),
+                )
                 for i, tc in enumerate(parsed.get("tool_calls", []))
             ]
             return None, tool_calls
@@ -208,5 +210,3 @@ def run_agent_loop(
             )
 
         steps += 1
-
-

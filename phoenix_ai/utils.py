@@ -45,7 +45,8 @@ class GenAIEmbeddingClient:
             )
         elif self.provider == "sentence-transformer":
             try:
-                from sentence_transformers import SentenceTransformer  # type: ignore
+                from sentence_transformers import \
+                    SentenceTransformer  # type: ignore
             except Exception as import_error:  # pragma: no cover - optional dependency
                 raise ImportError(
                     "Install sentence-transformers to use the 'sentence-transformer' provider: pip install sentence-transformers"
@@ -67,7 +68,9 @@ class GenAIEmbeddingClient:
     ) -> List[List[float]]:
         # Local provider path for Sentence Transformers
         if self.provider == "sentence-transformer":
-            return self._sentence_transformer_embedding(input_texts, batch_size=batch_size)
+            return self._sentence_transformer_embedding(
+                input_texts, batch_size=batch_size
+            )
 
         all_embeddings = []
         for i in range(0, len(input_texts), batch_size):
@@ -106,14 +109,12 @@ class GenAIEmbeddingClient:
     ) -> List[List[float]]:
         """Generate embeddings locally using Sentence Transformers."""
         # convert_to_numpy yields a numpy array; tolist() returns List[List[float]]
-        return (
-            self._st_model.encode(
-                input_texts,
-                batch_size=batch_size,
-                convert_to_numpy=True,
-                show_progress_bar=False,
-            ).tolist()
-        )
+        return self._st_model.encode(
+            input_texts,
+            batch_size=batch_size,
+            convert_to_numpy=True,
+            show_progress_bar=False,
+        ).tolist()
 
 
 class GenAIChatClient:
@@ -188,4 +189,3 @@ class GenAIChatClient:
             temperature=temperature,
         )
         return response.choices[0].message.content
-
