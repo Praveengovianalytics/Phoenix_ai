@@ -237,6 +237,7 @@ for k, v in metrics.items():
 - **🧠 OpenAI** - GPT-4, GPT-3.5, text-embedding models
 - **☁️ Azure OpenAI** - Enterprise-grade OpenAI services
 - **💼 Databricks** - Model serving and MosaicML integration
+- **🤗 Hugging Face (Qwen, etc.)** - Open-source model support via OpenAI-compatible endpoint
 - **🏠 Ollama** - Local LLM deployment and inference
 - **🔓 Sentence Transformers** - Free local embedding generation
 
