@@ -43,6 +43,12 @@ class RAGInferencer:
         ]  # ensure it's a string
         # return [row[1] for row in response["result"]["data_array"]]  # row = [id, content, score]
 
+    def _search_azure_ai_search_index(
+        self, index, query_embedding: np.ndarray, k: int = 3
+    ) -> List[str]:
+        # index is expected to be an AzureAISearchVectorStore with vector_search method
+        return index.vector_search(query_embedding.tolist()[0], k)
+
     def _search_keyword(self, query: str, k: int = 3) -> List[Tuple[str, float]]:
         if self.keyword_search_client is None:
             return []
@@ -99,6 +105,9 @@ class RAGInferencer:
         elif index_type == "databricks_vector_index":
             if index is None:
                 raise ValueError("Databricks vector search index must be provided")
+        elif index_type == "azure_ai_search_vector_index":
+            if index is None:
+                raise ValueError("Azure AI Search vector index must be provided")
 
         else:
             raise ValueError(f"Unsupported index_type: {index_type}")
@@ -113,6 +122,10 @@ class RAGInferencer:
                 retrieved_docs = [chunks[i] for i in indices]
             elif index_type == "databricks_vector_index":
                 retrieved_docs = self._search_databricks_index(
+                    index, query_embedding, k=top_k
+                )
+            elif index_type == "azure_ai_search_vector_index":
+                retrieved_docs = self._search_azure_ai_search_index(
                     index, query_embedding, k=top_k
                 )
 
@@ -150,6 +163,10 @@ class RAGInferencer:
                 retrieved_docs = [chunks[i] for i in indices]
             elif index_type == "databricks_vector_index":
                 retrieved_docs = self._search_databricks_index(
+                    index, hyde_embedding, k=top_k
+                )
+            elif index_type == "azure_ai_search_vector_index":
+                retrieved_docs = self._search_azure_ai_search_index(
                     index, hyde_embedding, k=top_k
                 )
         else:
@@ -285,11 +302,7 @@ class SelfRAGInferencer:
             temperature=temperature,
         )
 
-        parsed: Dict[str, str] = {
-            "verdict": "approve",
-            "rationale": "",
-            "final_answer": draft_answer,
-        }
+        parsed: Dict[str, str] = {"verdict": "approve", "rationale": "", "final_answer": draft_answer}
         try:
             loaded = json.loads(response)
             if isinstance(loaded, dict):

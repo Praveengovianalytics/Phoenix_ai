@@ -208,6 +208,26 @@ index_path, chunks = vector.generate_index(
 )
 ```
 
+#### Azure AI Search (vector) with MSI
+
+```python
+from phoenix_ai.vector_embedding_pipeline import VectorEmbedding
+
+vector = VectorEmbedding(embedding_client, chunk_size=500, overlap=50)
+azure_store = vector.generate_index(
+    df=df,
+    text_column="content",
+    index_path="",  # not used for Azure
+    vector_index_type="azure_ai_search_vector_index",
+    search_service_endpoint="https://<your-search-service>.search.windows.net",
+    index_name="policy-index",
+    embedding_dim=1536,  # match your embedding model
+    credential=None,  # DefaultAzureCredential (MSI) will be used when None
+)
+
+# azure_store can be passed directly to rag_inferencer.infer(..., index_type="azure_ai_search_vector_index", index=azure_store)
+```
+
 ### 4. Perform RAG Inference (Standard, Hybrid, or HyDE)
 
 ```python
