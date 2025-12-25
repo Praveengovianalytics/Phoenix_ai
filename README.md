@@ -144,8 +144,7 @@ pip install -e .
 
 ```python
 from phoenix_ai.utils import GenAIEmbeddingClient, GenAIChatClient
-from phoenix_ai.rag_inference import RAGInferencer
-from phoenix_ai.self_rag import SelfRAGInferencer
+from phoenix_ai.rag_inference import RAGInferencer, SelfRAGInferencer
 from phoenix_ai.config_param import Param
 
 # OpenAI
@@ -165,6 +164,23 @@ chat_client = GenAIChatClient(
 rag_inferencer = RAGInferencer(embedding_client, chat_client)
 # Self-RAG inferencer adds a self-critique loop
 self_rag_inferencer = SelfRAGInferencer(embedding_client, chat_client)
+```
+
+#### Hugging Face (Qwen) via OpenAI-compatible endpoint
+
+```python
+import os
+from phoenix_ai.utils import GenAIChatClient
+
+chat_client = GenAIChatClient(
+    provider="huggingface",
+    model="aisingapore/Qwen-SEA-LION-v4-32B-IT:featherless-ai",
+    api_key=os.environ["HF_TOKEN"],  # Hugging Face token
+    # base_url defaults to https://router.huggingface.co/v1; override if needed
+)
+
+response = chat_client.chat("What is the capital of France?")
+print(response)
 ```
 
 ### 2. Load and Process Documents
@@ -247,13 +263,18 @@ for k, v in metrics.items():
 ### 7. Run Self-RAG (context-aware + self-critique)
 
 ```python
+# Use the SelfRAGInferencer instance defined above (draft + critique)
 self_rag_df = self_rag_inferencer.infer(
-    question="What are the payment terms?",
+    system_prompt=Param.get_rag_prompt(),
+    critique_prompt=Param.get_self_rag_critique_prompt(),
     index_path="output/policy_doc.index",
-    top_k=3,
+    question="What are the payment terms?",
     index_type="local_index",  # or "databricks_vector_index" with index object
+    top_k=3,
+    max_tokens=256,
 )
 
+# Inspect both the draft and the final self-critiqued answer
 print(self_rag_df[["draft_answer", "final_answer"]])
 ```
 
