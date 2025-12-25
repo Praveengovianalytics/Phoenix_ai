@@ -144,6 +144,9 @@ pip install -e .
 
 ```python
 from phoenix_ai.utils import GenAIEmbeddingClient, GenAIChatClient
+from phoenix_ai.rag_inference import RAGInferencer
+from phoenix_ai.self_rag import SelfRAGInferencer
+from phoenix_ai.config_param import Param
 
 # OpenAI
 embedding_client = GenAIEmbeddingClient(
@@ -157,6 +160,11 @@ chat_client = GenAIChatClient(
     model="gpt-4o",
     api_key="your-openai-key"
 )
+
+# RAG inferencer for standard / HyDE flows
+rag_inferencer = RAGInferencer(embedding_client, chat_client)
+# Self-RAG inferencer adds a self-critique loop
+self_rag_inferencer = SelfRAGInferencer(embedding_client, chat_client)
 ```
 
 ### 2. Load and Process Documents
@@ -184,18 +192,24 @@ index_path, chunks = vector.generate_index(
 )
 ```
 
-### 4. Perform RAG Inference
+### 4. Perform RAG Inference (Standard, Hybrid, or HyDE)
 
 ```python
-from phoenix_ai.rag_inference import RAGInferencer
-from phoenix_ai.config_param import Param
-
-rag_inferencer = RAGInferencer(embedding_client, chat_client)
+# Standard RAG
 response_df = rag_inferencer.infer(
     system_prompt=Param.get_rag_prompt(),
     index_path="output/policy_doc.index",
     question="What is the purpose of the company Group Data Classification Policy?",
-    mode="standard",  # or "hybrid", "hyde"
+    mode="standard",
+    top_k=5
+)
+
+# HyDE RAG (generate hypothetical answer to guide retrieval)
+hyde_df = rag_inferencer.infer(
+    system_prompt=Param.get_rag_prompt(),
+    index_path="output/policy_doc.index",
+    question="What data categories are mentioned?",
+    mode="hyde",
     top_k=5
 )
 ```
@@ -228,6 +242,19 @@ df_eval, metrics = evaluator.evaluate(
 
 for k, v in metrics.items():
     print(f"{k}: {v:.4f}")
+```
+
+### 7. Run Self-RAG (context-aware + self-critique)
+
+```python
+self_rag_df = self_rag_inferencer.infer(
+    question="What are the payment terms?",
+    index_path="output/policy_doc.index",
+    top_k=3,
+    index_type="local_index",  # or "databricks_vector_index" with index object
+)
+
+print(self_rag_df[["draft_answer", "final_answer"]])
 ```
 
 ---
