@@ -27,15 +27,9 @@ class AzureAISearchVectorStore:
             from azure.identity import DefaultAzureCredential
             from azure.search.documents.indexes import SearchIndexClient
             from azure.search.documents.indexes.models import (
-                HnswAlgorithmConfiguration,
-                SearchField,
-                SearchFieldDataType,
-                SearchIndex,
-                SimpleField,
-                VectorSearch,
-                VectorSearchAlgorithmConfiguration,
-                VectorSearchProfile,
-            )
+                HnswAlgorithmConfiguration, SearchField, SearchFieldDataType,
+                SearchIndex, SimpleField, VectorSearch,
+                VectorSearchAlgorithmConfiguration, VectorSearchProfile)
         except Exception as import_error:  # pragma: no cover - optional dep
             raise ImportError(
                 "Install azure-identity and azure-search-documents to use Azure AI Search: "
@@ -78,7 +72,9 @@ class AzureAISearchVectorStore:
 
     def _ensure_index(self) -> None:
         fields = [
-            self._SimpleField(name="id", type=self._SearchFieldDataType.String, key=True),
+            self._SimpleField(
+                name="id", type=self._SearchFieldDataType.String, key=True
+            ),
             self._SearchField(
                 name="content",
                 type=self._SearchFieldDataType.String,
@@ -89,7 +85,9 @@ class AzureAISearchVectorStore:
             ),
             self._SearchField(
                 name="embedding",
-                type=self._SearchFieldDataType.Collection(self._SearchFieldDataType.Single),
+                type=self._SearchFieldDataType.Collection(
+                    self._SearchFieldDataType.Single
+                ),
                 searchable=True,
                 vector_search_dimensions=self.embedding_dim,
                 vector_search_profile_name="default-hnsw",
@@ -123,7 +121,9 @@ class AzureAISearchVectorStore:
 
     def upsert_documents(self, documents: Iterable[dict]) -> None:
         """Upsert documents with precomputed embeddings."""
-        results = self._search_client.merge_or_upload_documents(documents=list(documents))
+        results = self._search_client.merge_or_upload_documents(
+            documents=list(documents)
+        )
         failed = [r for r in results if not r.succeeded]
         if failed:
             raise RuntimeError(f"Azure AI Search upsert failures: {failed}")
