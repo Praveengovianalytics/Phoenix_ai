@@ -1,11 +1,7 @@
-from .tools import (
-    JsonFunctionAdapter,
-    OpenAIStyleAdapter,
-    Tool,
-    run_agent_loop,
-)
-from .utils import GenAIChatClient, GenAIEmbeddingClient
 from .self_rag import SelfRAGInferencer
+from .tools import (JsonFunctionAdapter, OpenAIStyleAdapter, Tool,
+                    run_agent_loop)
+from .utils import GenAIChatClient, GenAIEmbeddingClient
 
 __all__ = [
     "GenAIEmbeddingClient",
