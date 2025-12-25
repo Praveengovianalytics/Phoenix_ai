@@ -37,6 +37,13 @@ class GenAIEmbeddingClient:
             if not api_key:
                 raise ValueError("OpenAI provider requires api_key.")
             self.client = OpenAI(api_key=api_key)
+        elif self.provider == "huggingface":
+            if not api_key:
+                raise ValueError("Hugging Face provider requires api_key (HF_TOKEN).")
+            self.client = OpenAI(
+                api_key=api_key,
+                base_url=base_url or "https://router.huggingface.co/v1",
+            )
         elif self.provider == "ollama":
             # Ollama exposes an OpenAI-compatible API at /v1 by default on localhost:11434
             self.client = OpenAI(
@@ -127,6 +134,8 @@ class GenAIChatClient:
         api_key: str = None,
         api_version: str = None,
         azure_endpoint: str = None,
+        device: str = "cpu",
+        trust_remote_code: bool = True,
     ):
         """
         Initializes the chat client for OpenAI (public), Azure, Databricks, or Ollama.
@@ -159,9 +168,16 @@ class GenAIChatClient:
                 api_key=api_key or "ollama",
                 base_url=base_url or "http://localhost:11434/v1",
             )
+        elif self.provider == "huggingface":
+            if not api_key:
+                raise ValueError("Hugging Face provider requires api_key (HF_TOKEN).")
+            self.client = OpenAI(
+                api_key=api_key,
+                base_url=base_url or "https://router.huggingface.co/v1",
+            )
         else:
             raise ValueError(
-                "Provider must be 'azure-openai', 'databricks', 'openai', or 'ollama'."
+                "Provider must be 'azure-openai', 'databricks', 'openai', 'ollama', or 'huggingface'."
             )
 
     def chat(
