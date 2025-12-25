@@ -1,9 +1,5 @@
-from .tools import (
-    JsonFunctionAdapter,
-    OpenAIStyleAdapter,
-    Tool,
-    run_agent_loop,
-)
+from .tools import (JsonFunctionAdapter, OpenAIStyleAdapter, Tool,
+                    run_agent_loop)
 from .utils import GenAIChatClient, GenAIEmbeddingClient
 
 __all__ = [
