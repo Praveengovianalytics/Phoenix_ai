@@ -144,6 +144,8 @@ pip install -e .
 
 ```python
 from phoenix_ai.utils import GenAIEmbeddingClient, GenAIChatClient
+from phoenix_ai.rag_inference import RAGInferencer, SelfRAGInferencer
+from phoenix_ai.config_param import Param
 
 # OpenAI
 embedding_client = GenAIEmbeddingClient(
@@ -157,6 +159,44 @@ chat_client = GenAIChatClient(
     model="gpt-4o",
     api_key="your-openai-key"
 )
+
+# RAG inferencer for standard / HyDE flows
+rag_inferencer = RAGInferencer(embedding_client, chat_client)
+# Self-RAG inferencer adds a self-critique loop
+self_rag_inferencer = SelfRAGInferencer(embedding_client, chat_client)
+```
+
+#### Hugging Face (Qwen) via OpenAI-compatible endpoint
+
+```python
+import os
+from phoenix_ai.utils import GenAIChatClient
+
+chat_client = GenAIChatClient(
+    provider="huggingface",
+    model="aisingapore/Qwen-SEA-LION-v4-32B-IT",
+    api_key=os.environ["HF_TOKEN"],  # Hugging Face token
+    # base_url defaults to https://router.huggingface.co/v1; override if needed
+)
+
+response = chat_client.chat("What is the capital of France?")
+print(response)
+```
+
+> Note: When using the HF router, use plain model IDs (e.g., `aisingapore/Qwen-SEA-LION-v4-32B-IT`) and avoid provider suffixes like `:featherless-ai`.
+
+#### Hugging Face local/GPU (transformers)
+
+```python
+from phoenix_ai.utils import GenAIChatClient
+
+chat_client = GenAIChatClient(
+    provider="huggingface",
+    model="gpt2",                # or your HF repo
+    use_local_transformer=True,  # enable transformers pipeline
+    device=0,                    # GPU id, or "cpu"
+)
+print(chat_client.chat("Hello from a local model!"))
 ```
 
 ### 2. Load and Process Documents
@@ -184,18 +224,44 @@ index_path, chunks = vector.generate_index(
 )
 ```
 
-### 4. Perform RAG Inference
+#### Azure AI Search (vector) with MSI
 
 ```python
-from phoenix_ai.rag_inference import RAGInferencer
-from phoenix_ai.config_param import Param
+from phoenix_ai.vector_embedding_pipeline import VectorEmbedding
 
-rag_inferencer = RAGInferencer(embedding_client, chat_client)
+vector = VectorEmbedding(embedding_client, chunk_size=500, overlap=50)
+azure_store = vector.generate_index(
+    df=df,
+    text_column="content",
+    index_path="",  # not used for Azure
+    vector_index_type="azure_ai_search_vector_index",
+    search_service_endpoint="https://<your-search-service>.search.windows.net",
+    index_name="policy-index",
+    embedding_dim=1536,  # match your embedding model
+    credential=None,  # DefaultAzureCredential (MSI) will be used when None
+)
+
+# azure_store can be passed directly to rag_inferencer.infer(..., index_type="azure_ai_search_vector_index", index=azure_store)
+```
+
+### 4. Perform RAG Inference (Standard, Hybrid, or HyDE)
+
+```python
+# Standard RAG
 response_df = rag_inferencer.infer(
     system_prompt=Param.get_rag_prompt(),
     index_path="output/policy_doc.index",
     question="What is the purpose of the company Group Data Classification Policy?",
-    mode="standard",  # or "hybrid", "hyde"
+    mode="standard",
+    top_k=5
+)
+
+# HyDE RAG (generate hypothetical answer to guide retrieval)
+hyde_df = rag_inferencer.infer(
+    system_prompt=Param.get_rag_prompt(),
+    index_path="output/policy_doc.index",
+    question="What data categories are mentioned?",
+    mode="hyde",
     top_k=5
 )
 ```
@@ -230,6 +296,24 @@ for k, v in metrics.items():
     print(f"{k}: {v:.4f}")
 ```
 
+### 7. Run Self-RAG (context-aware + self-critique)
+
+```python
+# Use the SelfRAGInferencer instance defined above (draft + critique)
+self_rag_df = self_rag_inferencer.infer(
+    system_prompt=Param.get_rag_prompt(),
+    critique_prompt=Param.get_self_rag_critique_prompt(),
+    index_path="output/policy_doc.index",
+    question="What are the payment terms?",
+    index_type="local_index",  # or "databricks_vector_index" with index object
+    top_k=3,
+    max_tokens=256,
+)
+
+# Inspect both the draft and the final self-critiqued answer
+print(self_rag_df[["draft_answer", "final_answer"]])
+```
+
 ---
 
 ## 🛠️ Supported Providers
@@ -237,6 +321,7 @@ for k, v in metrics.items():
 - **🧠 OpenAI** - GPT-4, GPT-3.5, text-embedding models
 - **☁️ Azure OpenAI** - Enterprise-grade OpenAI services
 - **💼 Databricks** - Model serving and MosaicML integration
+- **🤗 Hugging Face (Qwen, etc.)** - Open-source model support via OpenAI-compatible endpoint
 - **🏠 Ollama** - Local LLM deployment and inference
 - **🔓 Sentence Transformers** - Free local embedding generation
 
