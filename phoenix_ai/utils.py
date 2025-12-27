@@ -3,6 +3,8 @@ from typing import Dict, List, Union
 
 from openai import AzureOpenAI, OpenAI
 
+from .hf_local_client import HuggingFaceTextGenerationClient
+
 
 class GenAIEmbeddingClient:
     def __init__(
@@ -37,6 +39,13 @@ class GenAIEmbeddingClient:
             if not api_key:
                 raise ValueError("OpenAI provider requires api_key.")
             self.client = OpenAI(api_key=api_key)
+        elif self.provider == "huggingface":
+            if not api_key:
+                raise ValueError("Hugging Face provider requires api_key (HF_TOKEN).")
+            self.client = OpenAI(
+                api_key=api_key,
+                base_url=base_url or "https://router.huggingface.co/v1",
+            )
         elif self.provider == "ollama":
             # Ollama exposes an OpenAI-compatible API at /v1 by default on localhost:11434
             self.client = OpenAI(
@@ -127,6 +136,9 @@ class GenAIChatClient:
         api_key: str = None,
         api_version: str = None,
         azure_endpoint: str = None,
+        device: str = "cpu",
+        trust_remote_code: bool = True,
+        use_local_transformer: bool = False,
     ):
         """
         Initializes the chat client for OpenAI (public), Azure, Databricks, or Ollama.
@@ -136,6 +148,7 @@ class GenAIChatClient:
         self.system_prompt = system_prompt
         self.client = None
         self.api_key = api_key
+        self._use_local_transformer = use_local_transformer
 
         if self.provider == "azure-openai":
             if not all([api_key, api_version, azure_endpoint]):
@@ -159,9 +172,25 @@ class GenAIChatClient:
                 api_key=api_key or "ollama",
                 base_url=base_url or "http://localhost:11434/v1",
             )
+        elif self.provider == "huggingface":
+            if use_local_transformer:
+                self.client = HuggingFaceTextGenerationClient(
+                    model=self.model,
+                    device=device,
+                    trust_remote_code=trust_remote_code,
+                )
+            else:
+                if not api_key:
+                    raise ValueError(
+                        "Hugging Face router provider requires api_key (HF_TOKEN)."
+                    )
+                self.client = OpenAI(
+                    api_key=api_key,
+                    base_url=base_url or "https://router.huggingface.co/v1",
+                )
         else:
             raise ValueError(
-                "Provider must be 'azure-openai', 'databricks', 'openai', or 'ollama'."
+                "Provider must be 'azure-openai', 'databricks', 'openai', 'ollama', or 'huggingface'."
             )
 
     def chat(
@@ -181,6 +210,13 @@ class GenAIChatClient:
             ]
         else:
             messages = user_input
+        if self.provider == "huggingface" and self._use_local_transformer:
+            return self.client.chat(
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                top_k=top_k,
+            )
 
         response = self.client.chat.completions.create(
             model=self.model,

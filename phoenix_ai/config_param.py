@@ -62,3 +62,13 @@ class Param:
     @staticmethod
     def get_evaluation_prompt():
         return Param.EVALUATION_PROMPT
+
+    SELF_RAG_CRITIQUE_PROMPT = """
+    You are a critical reviewer ensuring answers are grounded in the provided context.
+    Return a JSON object: {"verdict": "approve" | "revise", "rationale": "...", "final_answer": "..."}.
+    If the draft answer is incomplete or contains hallucinations, set verdict to "revise" and rewrite final_answer using only context facts.
+    """
+
+    @staticmethod
+    def get_self_rag_critique_prompt():
+        return Param.SELF_RAG_CRITIQUE_PROMPT
