@@ -174,13 +174,27 @@ from phoenix_ai.utils import GenAIChatClient
 
 chat_client = GenAIChatClient(
     provider="huggingface",
-    model="aisingapore/Qwen-SEA-LION-v4-32B-IT:featherless-ai",
+    model="aisingapore/Qwen-SEA-LION-v4-32B-IT",
     api_key=os.environ["HF_TOKEN"],  # Hugging Face token
     # base_url defaults to https://router.huggingface.co/v1; override if needed
 )
 
 response = chat_client.chat("What is the capital of France?")
 print(response)
+```
+
+#### Hugging Face local/GPU (transformers)
+
+```python
+from phoenix_ai.utils import GenAIChatClient
+
+chat_client = GenAIChatClient(
+    provider="huggingface",
+    model="gpt2",                # or your HF repo
+    use_local_transformer=True,  # enable transformers pipeline
+    device=0,                    # GPU id, or "cpu"
+)
+print(chat_client.chat("Hello from a local model!"))
 ```
 
 ### 2. Load and Process Documents

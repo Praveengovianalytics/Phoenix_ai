@@ -173,9 +173,7 @@ class VectorEmbedding:
                     f"Missing arguments for Azure AI Search index: {missing_args}"
                 )
 
-            df = df[df[text_column].astype(str).str.strip() != ""].reset_index(
-                drop=True
-            )
+            df = df[df[text_column].astype(str).str.strip() != ""].reset_index(drop=True)
             df["id"] = df.index.astype(str)
 
             contents = df[text_column].astype(str).tolist()
