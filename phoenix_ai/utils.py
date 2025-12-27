@@ -234,7 +234,7 @@ class GenAIChatClient:
                 raise ValueError(
                     "Hugging Face router could not serve this model. "
                     "Ensure the model ID is available via https://router.huggingface.co/v1 "
-                    "and omit provider suffixes like ':featherless-ai'."
+                    "and use a plain model ID without provider suffixes."
                 ) from err
             raise
         return response.choices[0].message.content
