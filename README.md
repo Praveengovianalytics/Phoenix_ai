@@ -183,6 +183,8 @@ response = chat_client.chat("What is the capital of France?")
 print(response)
 ```
 
+> Note: When using the HF router, use plain model IDs (e.g., `aisingapore/Qwen-SEA-LION-v4-32B-IT`) and avoid provider suffixes like `:featherless-ai`.
+
 #### Hugging Face local/GPU (transformers)
 
 ```python

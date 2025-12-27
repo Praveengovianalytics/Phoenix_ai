@@ -218,10 +218,23 @@ class GenAIChatClient:
                 top_k=top_k,
             )
 
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+        except Exception as err:
+            err_msg = str(err)
+            if (
+                self.provider == "huggingface"
+                and "model_not_supported" in err_msg.lower()
+            ):
+                raise ValueError(
+                    "Hugging Face router could not serve this model. "
+                    "Ensure the model ID is available via https://router.huggingface.co/v1 "
+                    "and omit provider suffixes like ':featherless-ai'."
+                ) from err
+            raise
         return response.choices[0].message.content

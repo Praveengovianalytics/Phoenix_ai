@@ -302,11 +302,7 @@ class SelfRAGInferencer:
             temperature=temperature,
         )
 
-        parsed: Dict[str, str] = {
-            "verdict": "approve",
-            "rationale": "",
-            "final_answer": draft_answer,
-        }
+        parsed: Dict[str, str] = {"verdict": "approve", "rationale": "", "final_answer": draft_answer}
         try:
             loaded = json.loads(response)
             if isinstance(loaded, dict):
