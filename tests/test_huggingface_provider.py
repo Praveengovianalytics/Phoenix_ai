@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
-
-from pathlib import Path
 import sys
+from pathlib import Path
+from typing import Any, Dict, List
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -58,11 +57,7 @@ class _DummyEmbeddings:
         return type(
             "Resp",
             (),
-            {
-                "data": [
-                    type("Item", (), {"embedding": [0.1, 0.2, 0.3]}) for _ in input
-                ]
-            },
+            {"data": [type("Item", (), {"embedding": [0.1, 0.2, 0.3]}) for _ in input]},
         )
 
 
@@ -85,7 +80,9 @@ def _make_openai_stub(holder: Dict[str, Any]):
     return _factory
 
 
-def test_huggingface_chat_uses_router_and_formats_messages(monkeypatch: pytest.MonkeyPatch):
+def test_huggingface_chat_uses_router_and_formats_messages(
+    monkeypatch: pytest.MonkeyPatch,
+):
     holder: Dict[str, Any] = {}
     monkeypatch.setattr("phoenix_ai.utils.OpenAI", _make_openai_stub(holder))
 
@@ -100,7 +97,10 @@ def test_huggingface_chat_uses_router_and_formats_messages(monkeypatch: pytest.M
     assert holder["init"]["base_url"] == "https://router.huggingface.co/v1"
     assert holder["chat_args"]["model"] == "aisingapore/Qwen-SEA-LION-v4-32B-IT"
     assert holder["chat_args"]["messages"][0]["role"] == "system"
-    assert holder["chat_args"]["messages"][1]["content"] == "What is the capital of France?"
+    assert (
+        holder["chat_args"]["messages"][1]["content"]
+        == "What is the capital of France?"
+    )
 
 
 def test_huggingface_chat_custom_base_url(monkeypatch: pytest.MonkeyPatch):
