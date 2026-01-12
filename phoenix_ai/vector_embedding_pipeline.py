@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 from databricks.vector_search.client import VectorSearchClient
 
+from .azure_ai_search import AzureAISearchVectorStore
+
 
 class VectorEmbedding:
     def __init__(self, embedding_client, chunk_size, overlap):
@@ -163,5 +165,39 @@ class VectorEmbedding:
                 embedding_dim=kwargs["embedding_dim"],
                 index_name=kwargs["index_name"],
             )
+        elif vector_index_type == "azure_ai_search_vector_index":
+            required_args = ["search_service_endpoint", "index_name", "embedding_dim"]
+            missing_args = [arg for arg in required_args if arg not in kwargs]
+            if missing_args:
+                raise ValueError(
+                    f"Missing arguments for Azure AI Search index: {missing_args}"
+                )
+
+            df = df[df[text_column].astype(str).str.strip() != ""].reset_index(
+                drop=True
+            )
+            df["id"] = df.index.astype(str)
+
+            contents = df[text_column].astype(str).tolist()
+            embeddings = self.client.generate_embedding(contents)
+
+            documents = []
+            for row_id, content, embedding in zip(df["id"], contents, embeddings):
+                documents.append(
+                    {
+                        "id": row_id,
+                        "content": content,
+                        "embedding": embedding,
+                    }
+                )
+
+            store = AzureAISearchVectorStore(
+                search_service_endpoint=kwargs["search_service_endpoint"],
+                index_name=kwargs["index_name"],
+                embedding_dim=kwargs["embedding_dim"],
+                credential=kwargs.get("credential"),
+            )
+            store.upsert_documents(documents)
+            return store
         else:
             raise ValueError(f"Unsupported vector_index_type: {vector_index_type}")
