@@ -236,9 +236,19 @@ azure_store = vector.generate_index(
     index_path="",  # not used for Azure
     vector_index_type="azure_ai_search_vector_index",
     search_service_endpoint="https://<your-search-service>.search.windows.net",
+    search_api_key="<your-search-api-key>",  # or provide credential=ClientSecretCredential(...)
     index_name="policy-index",
     embedding_dim=1536,  # match your embedding model
-    credential=None,  # DefaultAzureCredential (MSI) will be used when None
+    content_field_name="content",
+    vector_field_name="contentVector",
+    title_field_name="title",
+    vector_search_profile_name="vector-profile",
+    hnsw_algorithm_configuration_name="hnsw-config",
+    hnsw_metric="cosine",
+    hnsw_m=4,
+    hnsw_ef_construction=200,
+    hnsw_ef_search=300,
+    update_index=True,
 )
 
 # azure_store can be passed directly to rag_inferencer.infer(..., index_type="azure_ai_search_vector_index", index=azure_store)
@@ -279,6 +289,10 @@ qa_df = generator.process_dataframe(
     max_total_pairs=50
 )
 ```
+
+### Testing
+
+See `TESTING.md` for detailed test instructions.
 
 ### 6. Evaluate RAG Performance
 
