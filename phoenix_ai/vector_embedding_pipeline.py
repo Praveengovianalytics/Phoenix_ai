@@ -176,26 +176,55 @@ class VectorEmbedding:
             df = df[df[text_column].astype(str).str.strip() != ""].reset_index(
                 drop=True
             )
-            df["id"] = df.index.astype(str)
+            id_field_name = kwargs.get("id_field_name", "id")
+            content_field_name = kwargs.get("content_field_name", "content")
+            vector_field_name = kwargs.get("vector_field_name", "embedding")
+            title_field_name = kwargs.get("title_field_name")
+            metadata_fields = kwargs.get("metadata_fields")
+
+            df[id_field_name] = df.index.astype(str)
 
             contents = df[text_column].astype(str).tolist()
             embeddings = self.client.generate_embedding(contents)
 
             documents = []
-            for row_id, content, embedding in zip(df["id"], contents, embeddings):
-                documents.append(
-                    {
-                        "id": row_id,
-                        "content": content,
-                        "embedding": embedding,
-                    }
-                )
+            for row_index, content, embedding in zip(df.index, contents, embeddings):
+                row = df.loc[row_index]
+                document = {
+                    id_field_name: row[id_field_name],
+                    content_field_name: content,
+                    vector_field_name: embedding,
+                }
+                if title_field_name and title_field_name in df.columns:
+                    document[title_field_name] = str(row[title_field_name])
+                if metadata_fields:
+                    for field_name in metadata_fields:
+                        if field_name in df.columns:
+                            document[field_name] = str(row[field_name])
+                documents.append(document)
 
             store = AzureAISearchVectorStore(
                 search_service_endpoint=kwargs["search_service_endpoint"],
                 index_name=kwargs["index_name"],
                 embedding_dim=kwargs["embedding_dim"],
                 credential=kwargs.get("credential"),
+                search_api_key=kwargs.get("search_api_key"),
+                id_field_name=id_field_name,
+                content_field_name=content_field_name,
+                vector_field_name=vector_field_name,
+                title_field_name=title_field_name,
+                metadata_fields=metadata_fields,
+                vector_search_profile_name=kwargs.get(
+                    "vector_search_profile_name", "default-hnsw"
+                ),
+                hnsw_algorithm_configuration_name=kwargs.get(
+                    "hnsw_algorithm_configuration_name", "hnsw-config"
+                ),
+                hnsw_metric=kwargs.get("hnsw_metric", "cosine"),
+                hnsw_m=kwargs.get("hnsw_m", 4),
+                hnsw_ef_construction=kwargs.get("hnsw_ef_construction", 200),
+                hnsw_ef_search=kwargs.get("hnsw_ef_search", 300),
+                update_index=kwargs.get("update_index", False),
             )
             store.upsert_documents(documents)
             return store

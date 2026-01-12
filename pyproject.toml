@@ -42,5 +42,5 @@ pytest = "^8.2.0"
 minversion = "6.0"
 addopts = "-ra -q"
 testpaths = [
-    "test"
+    "tests"
 ]
