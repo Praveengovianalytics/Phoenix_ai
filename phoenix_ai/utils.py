@@ -15,6 +15,8 @@ class GenAIEmbeddingClient:
         api_key: str = None,
         api_version: str = None,
         azure_endpoint: str = None,
+        azure_ad_token: str = None,
+        azure_ad_token_provider: "object" = None,
         device: str = "cpu",
     ):
         """
@@ -28,12 +30,20 @@ class GenAIEmbeddingClient:
         if self.provider == "databricks":
             self.client = OpenAI(api_key=self.api_key, base_url=base_url)
         elif self.provider == "azure-openai":
-            if not all([api_key, api_version, azure_endpoint]):
+            if not all([api_version, azure_endpoint]):
                 raise ValueError(
-                    "Azure requires api_key, api_version, and azure_endpoint."
+                    "Azure requires api_version and azure_endpoint."
+                )
+            if not api_key and not azure_ad_token and not azure_ad_token_provider:
+                raise ValueError(
+                    "Azure requires api_key or azure_ad_token/azure_ad_token_provider."
                 )
             self.client = AzureOpenAI(
-                api_key=api_key, api_version=api_version, azure_endpoint=azure_endpoint
+                api_key=api_key,
+                api_version=api_version,
+                azure_endpoint=azure_endpoint,
+                azure_ad_token=azure_ad_token,
+                azure_ad_token_provider=azure_ad_token_provider,
             )
         elif self.provider == "openai":
             if not api_key:
@@ -136,6 +146,8 @@ class GenAIChatClient:
         api_key: str = None,
         api_version: str = None,
         azure_endpoint: str = None,
+        azure_ad_token: str = None,
+        azure_ad_token_provider: "object" = None,
         device: str = "cpu",
         trust_remote_code: bool = True,
         use_local_transformer: bool = False,
@@ -151,14 +163,20 @@ class GenAIChatClient:
         self._use_local_transformer = use_local_transformer
 
         if self.provider == "azure-openai":
-            if not all([api_key, api_version, azure_endpoint]):
+            if not all([api_version, azure_endpoint]):
                 raise ValueError(
-                    "Azure requires api_key, api_version, and azure_endpoint."
+                    "Azure requires api_version and azure_endpoint."
+                )
+            if not api_key and not azure_ad_token and not azure_ad_token_provider:
+                raise ValueError(
+                    "Azure requires api_key or azure_ad_token/azure_ad_token_provider."
                 )
             self.client = AzureOpenAI(
                 api_key=api_key,
                 api_version=api_version,
                 azure_endpoint=azure_endpoint,
+                azure_ad_token=azure_ad_token,
+                azure_ad_token_provider=azure_ad_token_provider,
             )
         elif self.provider == "databricks":
             self.client = OpenAI(api_key=self.api_key, base_url=base_url)
