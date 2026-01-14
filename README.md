@@ -254,6 +254,43 @@ azure_store = vector.generate_index(
 # azure_store can be passed directly to rag_inferencer.infer(..., index_type="azure_ai_search_vector_index", index=azure_store)
 ```
 
+#### Azure AI Search (vector) with API key + RAG inference
+
+```python
+from phoenix_ai.vector_embedding_pipeline import VectorEmbedding
+from phoenix_ai.rag_inference import RAGInferencer
+from phoenix_ai.config_param import Param
+
+vector = VectorEmbedding(embedding_client, chunk_size=500, overlap=50)
+azure_store = vector.generate_index(
+    df=df,
+    text_column="content",
+    index_path="",
+    vector_index_type="azure_ai_search_vector_index",
+    search_service_endpoint="https://<your-search-service>.search.windows.net",
+    search_api_key="<your-search-api-key>",
+    index_name="policy-index",
+    embedding_dim=1536,
+    content_field_name="content",
+    vector_field_name="contentVector",
+    title_field_name="title",
+    vector_search_profile_name="vector-profile",
+    hnsw_algorithm_configuration_name="hnsw-config",
+    update_index=True,
+)
+
+rag_inferencer = RAGInferencer(embedding_client, chat_client)
+response_df = rag_inferencer.infer(
+    system_prompt=Param.get_rag_prompt(),
+    question="Summarize the policy.",
+    top_k=3,
+    mode="standard",
+    index_type="azure_ai_search_vector_index",
+    index=azure_store,
+)
+print(response_df[["question", "answer"]])
+```
+
 #### Azure AI Search + Azure OpenAI (RAG) with Entra ID
 
 ```python
