@@ -291,6 +291,74 @@ response_df = rag_inferencer.infer(
 print(response_df[["question", "answer"]])
 ```
 
+#### Milvus (local) with RAG inference
+
+```python
+from phoenix_ai.vector_embedding_pipeline import VectorEmbedding
+from phoenix_ai.rag_inference import RAGInferencer
+from phoenix_ai.config_param import Param
+
+vector = VectorEmbedding(embedding_client, chunk_size=500, overlap=50)
+milvus_store = vector.generate_index(
+    df=df,
+    text_column="content",
+    index_path="",
+    vector_index_type="milvus_vector_index",
+    connection_args={"host": "localhost", "port": "19530"},
+    collection_name="policy_index",
+    embedding_dim=1536,
+    content_field_name="content",
+    vector_field_name="embedding",
+)
+
+rag_inferencer = RAGInferencer(embedding_client, chat_client)
+response_df = rag_inferencer.infer(
+    system_prompt=Param.get_rag_prompt(),
+    question="Summarize the policy.",
+    top_k=3,
+    mode="standard",
+    index_type="milvus_vector_index",
+    index=milvus_store,
+)
+print(response_df[["question", "answer"]])
+```
+
+#### Milvus (cloud hosted) with token auth
+
+```python
+from phoenix_ai.vector_embedding_pipeline import VectorEmbedding
+from phoenix_ai.rag_inference import RAGInferencer
+from phoenix_ai.config_param import Param
+
+vector = VectorEmbedding(embedding_client, chunk_size=500, overlap=50)
+milvus_store = vector.generate_index(
+    df=df,
+    text_column="content",
+    index_path="",
+    vector_index_type="milvus_vector_index",
+    connection_args={
+        "uri": "https://<your-cluster>.api.gcp-us-west1.zillizcloud.com",
+        "token": "<milvus-token>",
+        "secure": True,
+    },
+    collection_name="policy_index",
+    embedding_dim=1536,
+    content_field_name="content",
+    vector_field_name="embedding",
+)
+
+rag_inferencer = RAGInferencer(embedding_client, chat_client)
+response_df = rag_inferencer.infer(
+    system_prompt=Param.get_rag_prompt(),
+    question="Summarize the policy.",
+    top_k=3,
+    mode="standard",
+    index_type="milvus_vector_index",
+    index=milvus_store,
+)
+print(response_df[["question", "answer"]])
+```
+
 #### Azure AI Search + Azure OpenAI (RAG) with Entra ID
 
 ```python
