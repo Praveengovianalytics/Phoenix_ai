@@ -210,6 +210,97 @@ df = load_and_process_single_document(
 )
 ```
 
+#### Complex documents & images (Unstructured)
+
+Phoenix AI can optionally use the Unstructured parser to handle complex PDFs, Office docs, and images while preserving element metadata.
+
+```python
+from phoenix_ai.loaders import load_and_process_single_document
+
+df = load_and_process_single_document(
+    folder_path="data/",
+    filename="complex_report.pdf",
+    use_unstructured=True,
+    unstructured_kwargs={
+        "strategy": "hi_res",
+        "infer_table_structure": True,
+    },
+    chunking_strategy="by_title",
+    chunking_kwargs={
+        "max_characters": 1500,
+        "combine_text_under_n_chars": 200,
+    },
+)
+```
+
+To load an entire folder (including images such as PNG/JPG), enable the same flag:
+
+```python
+from phoenix_ai.loaders import load_documents_to_dataframe
+
+df = load_documents_to_dataframe(
+    folder_path="data/",
+    use_unstructured=True,
+    unstructured_kwargs={"strategy": "hi_res"},
+    unstructured_metadata_fields=["page_number", "filetype", "languages", "coordinates"],
+    chunking_strategy="by_title",
+)
+```
+
+#### Example: Complex PDF with table extraction
+
+```python
+from phoenix_ai.loaders import load_and_process_single_document
+
+df = load_and_process_single_document(
+    folder_path="data/",
+    filename="financial_report.pdf",
+    use_unstructured=True,
+    unstructured_kwargs={
+        "strategy": "hi_res",
+        "infer_table_structure": True,
+        "extract_images_in_pdf": True,
+    },
+    chunking_strategy="by_title",
+    chunking_kwargs={
+        "max_characters": 1800,
+        "new_after_n_chars": 1600,
+    },
+)
+```
+
+#### Example: Image (scanned receipt/invoice)
+
+```python
+from phoenix_ai.loaders import load_and_process_single_document
+
+df = load_and_process_single_document(
+    folder_path="data/",
+    filename="receipt.png",
+    use_unstructured=True,
+    unstructured_kwargs={
+        "strategy": "hi_res",
+        "ocr_languages": "eng",
+    },
+    chunking_strategy="basic",
+    chunking_kwargs={"max_characters": 800},
+)
+```
+
+#### Example: Folder ingestion with selective metadata
+
+```python
+from phoenix_ai.loaders import load_documents_to_dataframe
+
+df = load_documents_to_dataframe(
+    folder_path="data/",
+    use_unstructured=True,
+    unstructured_kwargs={"strategy": "fast"},
+    unstructured_metadata_fields=["page_number", "filetype"],
+    chunking_strategy="basic",
+)
+```
+
 ### 3. Generate Vector Index
 
 ```python

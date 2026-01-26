@@ -1,11 +1,20 @@
 import os
-from typing import List
+from typing import Dict, Iterable, List, Optional, Sequence
 
 import pandas as pd
 from langchain_community.document_loaders import (
     PyPDFLoader, TextLoader, UnstructuredExcelLoader,
     UnstructuredPowerPointLoader, UnstructuredWordDocumentLoader)
 from PyPDF2 import PdfReader
+
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tiff", ".bmp"}
+DEFAULT_UNSTRUCTURED_METADATA_FIELDS = (
+    "page_number",
+    "filetype",
+    "source",
+    "languages",
+    "coordinates",
+)
 
 
 # Ensure the data directory exists
@@ -44,14 +53,127 @@ def _split_text(text: str, max_chars: int = 1000, overlap: int = 100) -> List[st
     return chunks
 
 
-def load_and_process_single_document(folder_path: str, filename: str) -> pd.DataFrame:
+def _partition_unstructured(
+    file_path: str,
+    file_extension: str,
+    unstructured_kwargs: Optional[Dict[str, object]] = None,
+):
+    try:
+        if file_extension == ".pdf":
+            from unstructured.partition.pdf import partition_pdf
+
+            return partition_pdf(filename=file_path, **(unstructured_kwargs or {}))
+        if file_extension in IMAGE_EXTENSIONS:
+            from unstructured.partition.image import partition_image
+
+            return partition_image(filename=file_path, **(unstructured_kwargs or {}))
+        from unstructured.partition.auto import partition
+
+        return partition(filename=file_path, **(unstructured_kwargs or {}))
+    except ImportError as exc:
+        raise ImportError(
+            "Unstructured is required for complex document parsing. "
+            "Install it with `pip install unstructured`."
+        ) from exc
+
+
+def _chunk_unstructured_elements(
+    elements: Sequence[object],
+    chunking_strategy: Optional[str],
+    chunking_kwargs: Optional[Dict[str, object]] = None,
+) -> Sequence[object]:
+    if not chunking_strategy:
+        return elements
+    try:
+        if chunking_strategy == "by_title":
+            from unstructured.chunking.title import chunk_by_title
+
+            return chunk_by_title(elements, **(chunking_kwargs or {}))
+        if chunking_strategy == "basic":
+            from unstructured.chunking.basic import chunk_elements
+
+            return chunk_elements(elements, **(chunking_kwargs or {}))
+    except ImportError as exc:
+        raise ImportError(
+            "Unstructured chunking requires the unstructured package. "
+            "Install it with `pip install unstructured`."
+        ) from exc
+    raise ValueError(
+        "Unsupported chunking_strategy. Use 'by_title', 'basic', or None."
+    )
+
+
+def _serialize_metadata_value(value: object) -> object:
+    if value is None:
+        return None
+    if hasattr(value, "to_dict"):
+        return value.to_dict()
+    if hasattr(value, "__dict__"):
+        return value.__dict__
+    return value
+
+
+def _records_from_unstructured(
+    elements: Sequence[object],
+    filename: str,
+    metadata_fields: Iterable[str],
+) -> List[Dict[str, object]]:
+    records: List[Dict[str, object]] = []
+    for element_index, element in enumerate(elements):
+        text = (getattr(element, "text", "") or "").strip()
+        if not text:
+            continue
+        metadata = getattr(element, "metadata", None)
+        record: Dict[str, object] = {
+            "filename": filename,
+            "content": text,
+            "chunk_id": element_index,
+            "element_type": getattr(element, "category", None)
+            or element.__class__.__name__,
+        }
+        if metadata is not None:
+            for field in metadata_fields:
+                record[field] = _serialize_metadata_value(
+                    getattr(metadata, field, None)
+                )
+        records.append(record)
+    return records
+
+
+def load_and_process_single_document(
+    folder_path: str,
+    filename: str,
+    *,
+    use_unstructured: bool = False,
+    unstructured_kwargs: Optional[Dict[str, object]] = None,
+    unstructured_metadata_fields: Optional[Iterable[str]] = None,
+    chunking_strategy: Optional[str] = None,
+    chunking_kwargs: Optional[Dict[str, object]] = None,
+) -> pd.DataFrame:
     ensure_folder_exists(folder_path)
     file_path = os.path.join(folder_path, filename)
 
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"❌ File not found: {file_path}")
 
+    ext = os.path.splitext(filename)[-1].lower()
     try:
+        if use_unstructured:
+            elements = _partition_unstructured(
+                file_path, ext, unstructured_kwargs=unstructured_kwargs
+            )
+            elements = _chunk_unstructured_elements(
+                elements, chunking_strategy, chunking_kwargs
+            )
+            records = _records_from_unstructured(
+                elements,
+                filename,
+                unstructured_metadata_fields
+                or DEFAULT_UNSTRUCTURED_METADATA_FIELDS,
+            )
+            if records:
+                return pd.DataFrame(records)
+
         if filename.lower().endswith(".pdf"):
             full_text = _read_pdf(file_path)
         elif filename.lower().endswith(".txt"):
@@ -81,7 +203,15 @@ def load_and_process_single_document(folder_path: str, filename: str) -> pd.Data
     )
 
 
-def load_documents_to_dataframe(folder_path: str) -> pd.DataFrame:
+def load_documents_to_dataframe(
+    folder_path: str,
+    *,
+    use_unstructured: bool = False,
+    unstructured_kwargs: Optional[Dict[str, object]] = None,
+    unstructured_metadata_fields: Optional[Iterable[str]] = None,
+    chunking_strategy: Optional[str] = None,
+    chunking_kwargs: Optional[Dict[str, object]] = None,
+) -> pd.DataFrame:
     ensure_folder_exists(folder_path)
 
     supported_loaders = {
@@ -104,11 +234,32 @@ def load_documents_to_dataframe(folder_path: str) -> pd.DataFrame:
         file_path = os.path.join(folder_path, filename)
 
         try:
-            if ext == ".csv":
+            if use_unstructured and (
+                ext in supported_loaders or ext in IMAGE_EXTENSIONS
+            ):
+                print(f"🧩 Loading with Unstructured: {filename}")
+                elements = _partition_unstructured(
+                    file_path, ext, unstructured_kwargs=unstructured_kwargs
+                )
+                elements = _chunk_unstructured_elements(
+                    elements, chunking_strategy, chunking_kwargs
+                )
+                records.extend(
+                    _records_from_unstructured(
+                        elements,
+                        filename,
+                        unstructured_metadata_fields
+                        or DEFAULT_UNSTRUCTURED_METADATA_FIELDS,
+                    )
+                )
+
+            elif ext == ".csv":
                 print(f"📄 Loading CSV: {filename}")
                 df = pd.read_csv(file_path)
                 for _, row in df.iterrows():
-                    record_text = " | ".join(str(v) for v in row.values if pd.notna(v))
+                    record_text = " | ".join(
+                        str(v) for v in row.values if pd.notna(v)
+                    )
                     records.append({"filename": filename, "content": record_text})
 
             elif ext in [".xls", ".xlsx"]:
