@@ -7,6 +7,7 @@ import pandas as pd
 from databricks.vector_search.client import VectorSearchClient
 
 from .azure_ai_search import AzureAISearchVectorStore
+from .milvus_vector_store import MilvusVectorStore
 
 
 class VectorEmbedding:
@@ -225,6 +226,58 @@ class VectorEmbedding:
                 hnsw_ef_construction=kwargs.get("hnsw_ef_construction", 200),
                 hnsw_ef_search=kwargs.get("hnsw_ef_search", 300),
                 update_index=kwargs.get("update_index", False),
+            )
+            store.upsert_documents(documents)
+            return store
+        elif vector_index_type == "milvus_vector_index":
+            required_args = ["connection_args", "collection_name", "embedding_dim"]
+            missing_args = [arg for arg in required_args if arg not in kwargs]
+            if missing_args:
+                raise ValueError(
+                    f"Missing arguments for Milvus index: {missing_args}"
+                )
+
+            df = df[df[text_column].astype(str).str.strip() != ""].reset_index(
+                drop=True
+            )
+            id_field_name = kwargs.get("id_field_name", "id")
+            content_field_name = kwargs.get("content_field_name", "content")
+            vector_field_name = kwargs.get("vector_field_name", "embedding")
+            metadata_fields = kwargs.get("metadata_fields")
+
+            df[id_field_name] = df.index.astype(str)
+
+            contents = df[text_column].astype(str).tolist()
+            embeddings = self.client.generate_embedding(contents)
+
+            documents = []
+            for row_index, content, embedding in zip(df.index, contents, embeddings):
+                row = df.loc[row_index]
+                document = {
+                    id_field_name: row[id_field_name],
+                    content_field_name: content,
+                    vector_field_name: embedding,
+                }
+                if metadata_fields:
+                    for field_name in metadata_fields:
+                        if field_name in df.columns:
+                            document[field_name] = str(row[field_name])
+                documents.append(document)
+
+            store = MilvusVectorStore(
+                connection_args=kwargs["connection_args"],
+                collection_name=kwargs["collection_name"],
+                embedding_dim=kwargs["embedding_dim"],
+                id_field_name=id_field_name,
+                content_field_name=content_field_name,
+                vector_field_name=vector_field_name,
+                metadata_fields=metadata_fields,
+                index_params=kwargs.get("index_params"),
+                search_params=kwargs.get("search_params"),
+                metric_type=kwargs.get("metric_type", "COSINE"),
+                consistency_level=kwargs.get("consistency_level", "Session"),
+                drop_old=kwargs.get("drop_old", False),
+                connection_alias=kwargs.get("connection_alias", "default"),
             )
             store.upsert_documents(documents)
             return store

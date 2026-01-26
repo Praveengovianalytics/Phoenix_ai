@@ -49,6 +49,11 @@ class RAGInferencer:
         # index is expected to be an AzureAISearchVectorStore with vector_search method
         return index.vector_search(query_embedding.tolist()[0], k)
 
+    def _search_milvus_index(
+        self, index, query_embedding: np.ndarray, k: int = 3
+    ) -> List[str]:
+        return index.vector_search(query_embedding.tolist()[0], k)
+
     def _search_keyword(self, query: str, k: int = 3) -> List[Tuple[str, float]]:
         if self.keyword_search_client is None:
             return []
@@ -108,6 +113,9 @@ class RAGInferencer:
         elif index_type == "azure_ai_search_vector_index":
             if index is None:
                 raise ValueError("Azure AI Search vector index must be provided")
+        elif index_type == "milvus_vector_index":
+            if index is None:
+                raise ValueError("Milvus vector index must be provided")
 
         else:
             raise ValueError(f"Unsupported index_type: {index_type}")
@@ -126,6 +134,10 @@ class RAGInferencer:
                 )
             elif index_type == "azure_ai_search_vector_index":
                 retrieved_docs = self._search_azure_ai_search_index(
+                    index, query_embedding, k=top_k
+                )
+            elif index_type == "milvus_vector_index":
+                retrieved_docs = self._search_milvus_index(
                     index, query_embedding, k=top_k
                 )
 
@@ -167,6 +179,10 @@ class RAGInferencer:
                 )
             elif index_type == "azure_ai_search_vector_index":
                 retrieved_docs = self._search_azure_ai_search_index(
+                    index, hyde_embedding, k=top_k
+                )
+            elif index_type == "milvus_vector_index":
+                retrieved_docs = self._search_milvus_index(
                     index, hyde_embedding, k=top_k
                 )
         else:
@@ -217,6 +233,11 @@ class SelfRAGInferencer:
         )
         return [str(row[1]) for row in response["result"]["data_array"]]
 
+    def _search_milvus_index(
+        self, index, query_embedding: np.ndarray, k: int
+    ) -> List[str]:
+        return index.vector_search(query_embedding.tolist()[0], k)
+
     def _load_chunks(self, index_path: str) -> List[str]:
         chunk_path = os.path.splitext(index_path)[0] + "_chunks.pkl"
         if not os.path.exists(chunk_path):
@@ -246,6 +267,11 @@ class SelfRAGInferencer:
             if index is None:
                 raise ValueError("Databricks vector search index must be provided")
             return self._search_databricks_index(index, query_embedding, k=top_k)
+
+        if index_type == "milvus_vector_index":
+            if index is None:
+                raise ValueError("Milvus vector index must be provided")
+            return self._search_milvus_index(index, query_embedding, k=top_k)
 
         raise ValueError(f"Unsupported index_type: {index_type}")
 

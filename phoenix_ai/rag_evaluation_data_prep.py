@@ -36,7 +36,11 @@ class RagEvalDataPrep:
 
             if self.index_type == "local_index":
                 kwargs["index_path"] = self.index_path
-            elif self.index_type == "databricks_vector_index":
+            elif self.index_type in (
+                "databricks_vector_index",
+                "azure_ai_search_vector_index",
+                "milvus_vector_index",
+            ):
                 kwargs["index"] = self.index
             else:
                 raise ValueError(f"Unsupported index type: {self.index_type}")

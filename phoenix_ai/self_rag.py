@@ -41,6 +41,11 @@ class SelfRAGInferencer:
         )
         return [str(row[1]) for row in response["result"]["data_array"]]
 
+    def _search_milvus_index(
+        self, index, query_embedding: np.ndarray, k: int
+    ) -> List[str]:
+        return index.vector_search(query_embedding.tolist()[0], k)
+
     def _load_chunks(self, index_path: str) -> List[str]:
         chunk_path = os.path.splitext(index_path)[0] + "_chunks.pkl"
         if not os.path.exists(chunk_path):
@@ -70,6 +75,11 @@ class SelfRAGInferencer:
             if index is None:
                 raise ValueError("Databricks vector search index must be provided")
             return self._search_databricks_index(index, query_embedding, k=top_k)
+
+        if index_type == "milvus_vector_index":
+            if index is None:
+                raise ValueError("Milvus vector index must be provided")
+            return self._search_milvus_index(index, query_embedding, k=top_k)
 
         raise ValueError(f"Unsupported index_type: {index_type}")
 
