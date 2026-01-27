@@ -38,6 +38,14 @@ Phoenix_ai is an open-source, modular Python library that bridges the gap betwee
 - Multi-document context processing
 - Real-time inference with streaming support
 
+### 🕸️ **GraphRAG - Knowledge Graph Enhanced RAG**
+- Automatic entity and relationship extraction using LLMs
+- Knowledge graph construction from documents
+- Multi-hop reasoning through graph traversal
+- Hybrid retrieval combining vector similarity + graph relationships
+- Reduced hallucinations through fact grounding
+- Save/load knowledge graphs (JSON and pickle formats)
+
 ### 📝 **Ground-Truth QA Generation & Evaluation**
 - Automated question-answer pair generation from documents
 - BLEU score evaluation for answer quality
@@ -597,6 +605,179 @@ self_rag_df = self_rag_inferencer.infer(
 
 # Inspect both the draft and the final self-critiqued answer
 print(self_rag_df[["draft_answer", "final_answer"]])
+```
+
+### 8. GraphRAG - Knowledge Graph Enhanced RAG
+
+GraphRAG enhances traditional RAG with knowledge graph capabilities for improved multi-hop reasoning and reduced hallucinations.
+
+#### Basic GraphRAG Setup
+
+```python
+from phoenix_ai.utils import GenAIEmbeddingClient, GenAIChatClient
+from phoenix_ai.graphrag import GraphRAGInferencer
+
+# Initialize clients
+embedding_client = GenAIEmbeddingClient(
+    provider="openai",
+    model="text-embedding-3-small",
+    api_key="your-openai-key"
+)
+
+chat_client = GenAIChatClient(
+    provider="openai",
+    model="gpt-4o-mini",
+    api_key="your-openai-key"
+)
+
+# Create GraphRAG inferencer
+graphrag = GraphRAGInferencer(
+    embedding_client=embedding_client,
+    chat_client=chat_client,
+    graph_weight=0.3,        # Balance between vector and graph retrieval
+    max_graph_depth=2,       # Multi-hop traversal depth
+    include_graph_context=True
+)
+```
+
+#### Build Knowledge Graph from Documents
+
+```python
+# From a list of text chunks
+chunks = [
+    "Apple Inc. was founded by Steve Jobs, Steve Wozniak, and Ronald Wayne in 1976.",
+    "Microsoft was founded by Bill Gates and Paul Allen in 1975.",
+    "Steve Jobs returned to Apple in 1997 and launched the iPhone in 2007.",
+]
+
+# Build the knowledge graph (extracts entities and relationships)
+graph = graphrag.build_graph(chunks)
+
+print(f"Entities: {graph.num_entities}")
+print(f"Relationships: {graph.num_relationships}")
+
+# Or build from a DataFrame (compatible with document loaders)
+from phoenix_ai.loaders import load_and_process_single_document
+
+df = load_and_process_single_document(folder_path="data/", filename="company_docs.pdf")
+graph = graphrag.build_graph_from_dataframe(df, text_column="content")
+```
+
+#### Perform GraphRAG Inference
+
+```python
+from phoenix_ai.config_param import Param
+
+# First, create the FAISS index for vector retrieval
+from phoenix_ai.vector_embedding_pipeline import VectorEmbedding
+
+vector = VectorEmbedding(embedding_client, chunk_size=500, overlap=50)
+index_path, _ = vector.generate_index(
+    df=df,
+    text_column="content",
+    index_path="output/company_docs.index",
+    vector_index_type="local_index"
+)
+
+# Run GraphRAG inference (combines vector + graph retrieval)
+result_df = graphrag.infer(
+    system_prompt=Param.get_rag_prompt(),
+    question="How is Steve Jobs connected to Apple's product innovations?",
+    index_path=index_path,
+    top_k=5,
+    mode="graphrag",     # Use graph-enhanced retrieval
+    use_graph=True
+)
+
+print(result_df[["question", "answer"]])
+
+# Access extracted entities used in the query
+if "entities" in result_df.columns:
+    print("Relevant entities:", result_df["entities"].iloc[0])
+```
+
+#### Save and Load Knowledge Graphs
+
+```python
+# Save the knowledge graph for later use
+graphrag.save_graph("output/company_knowledge_graph.json")
+
+# Load a previously built knowledge graph
+graphrag.load_graph("output/company_knowledge_graph.json")
+
+# The graph can also be saved in pickle format for faster loading
+graph.save("output/company_graph.pkl")
+loaded_graph = KnowledgeGraph.load("output/company_graph.pkl")
+```
+
+#### Direct Graph Querying (for debugging/exploration)
+
+```python
+# Query the knowledge graph directly without LLM generation
+results = graphrag.query_graph(
+    query="Apple iPhone",
+    k=5
+)
+
+for r in results["results"]:
+    entity = r["entity"]
+    print(f"Entity: {entity['name']} ({entity['entity_type']})")
+    print(f"  Score: {r['score']:.3f}")
+    print(f"  Related chunks: {r['chunks']}")
+```
+
+#### Advanced: Custom Entity and Relationship Types
+
+```python
+from phoenix_ai.graphrag import GraphBuilder, LLMEntityExtractor, LLMRelationshipExtractor
+
+# Define custom extraction types for your domain
+entity_extractor = LLMEntityExtractor(
+    chat_client=chat_client,
+    entity_types=["DRUG", "DISEASE", "SYMPTOM", "TREATMENT", "GENE"]
+)
+
+relationship_extractor = LLMRelationshipExtractor(
+    chat_client=chat_client,
+    relation_types=["TREATS", "CAUSES", "INHIBITS", "ASSOCIATED_WITH", "TARGETS"]
+)
+
+# Build a domain-specific graph
+builder = GraphBuilder(
+    entity_extractor=entity_extractor,
+    relationship_extractor=relationship_extractor,
+    embedding_client=embedding_client,
+    deduplicate_entities=True
+)
+
+medical_graph = builder.build_from_chunks(medical_chunks)
+```
+
+#### Incremental Graph Building (for large document sets)
+
+```python
+from phoenix_ai.graphrag import IncrementalGraphBuilder, GraphBuilder
+
+# For large document collections, build incrementally
+builder = GraphBuilder.from_clients(
+    chat_client=chat_client,
+    embedding_client=embedding_client
+)
+
+incremental_builder = IncrementalGraphBuilder(
+    graph_builder=builder,
+    batch_size=10,
+    checkpoint_path="output/graph_checkpoint.json"
+)
+
+# Build with progress tracking
+def progress_callback(current, total, stage):
+    print(f"{stage}: {current}/{total}")
+
+large_graph = incremental_builder.build(
+    chunks=large_chunk_list,
+    progress_callback=progress_callback
+)
 ```
 
 ---
