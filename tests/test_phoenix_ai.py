@@ -106,6 +106,6 @@ def test_rag_inference(embedding_client, chat_client, vector_index):
         top_k=3,
     )
     assert isinstance(response_df, pd.DataFrame)
-    assert "response" in response_df.columns
+    assert "answer" in response_df.columns
     assert len(response_df) > 0
     print("✅ RAG inference passed.")

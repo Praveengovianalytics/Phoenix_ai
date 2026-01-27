@@ -7,7 +7,6 @@ from typing import Dict, List, Optional, Tuple
 import faiss
 import numpy as np
 import pandas as pd
-from openai import OpenAI
 
 from .config_param import Param
 

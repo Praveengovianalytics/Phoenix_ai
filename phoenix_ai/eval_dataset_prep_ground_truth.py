@@ -1,13 +1,8 @@
 import json
-import os
 import re
-from pathlib import Path
-from typing import Dict, List
 
 import fitz  # PyMuPDF
 import pandas as pd
-import requests
-from openai import AzureOpenAI, OpenAI
 
 
 class EvalDatasetGroundTruthGenerator:
@@ -109,9 +104,11 @@ class EvalDatasetGroundTruthGenerator:
                     remaining = max_total_pairs - len(all_qa_pairs)
                     if remaining <= 0:
                         break
-                    qa_pairs = qa_pairs[:remaining]
+                    if qa_pairs:
+                        qa_pairs = qa_pairs[:remaining]
 
-                all_qa_pairs.extend(qa_pairs)
+                if qa_pairs:
+                    all_qa_pairs.extend(qa_pairs)
 
                 if max_total_pairs is not None and len(all_qa_pairs) >= max_total_pairs:
                     break
@@ -130,11 +127,11 @@ class EvalDatasetGroundTruthGenerator:
             prompt = prompt_template.format(context=context_text)
             qa_pairs = self._call_chat_client(prompt)
 
-            if max_total_pairs is not None:
-                remaining = max_total_pairs - len(all_qa_pairs)
-                qa_pairs = qa_pairs[:remaining]
-
-            all_qa_pairs.extend(qa_pairs)
+            if qa_pairs:
+                if max_total_pairs is not None:
+                    remaining = max_total_pairs - len(all_qa_pairs)
+                    qa_pairs = qa_pairs[:remaining]
+                all_qa_pairs.extend(qa_pairs)
 
         if not all_qa_pairs:
             print("⚠️ No Q&A pairs returned.")

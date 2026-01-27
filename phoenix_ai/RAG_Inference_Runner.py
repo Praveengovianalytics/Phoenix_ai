@@ -1,6 +1,8 @@
-from config_param import Param
-from rag_inference import RAGInferencer
-from utils import GenAIChatClient, GenAIEmbeddingClient
+import pandas as pd
+
+from .config_param import Param
+from .rag_inference import RAGInferencer
+from .utils import GenAIChatClient, GenAIEmbeddingClient
 
 
 class RAGInferenceRunner:

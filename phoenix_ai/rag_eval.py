@@ -1,10 +1,8 @@
-import os
 import re
 
 import mlflow
 import pandas as pd
-from nltk.translate.bleu_score import (SmoothingFunction, corpus_bleu,
-                                       sentence_bleu)
+from nltk.translate.bleu_score import SmoothingFunction, sentence_bleu
 from sklearn.metrics import f1_score, precision_score, recall_score
 
 # from config_param import Param
