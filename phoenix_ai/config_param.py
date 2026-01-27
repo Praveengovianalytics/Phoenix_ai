@@ -72,3 +72,65 @@ class Param:
     @staticmethod
     def get_self_rag_critique_prompt():
         return Param.SELF_RAG_CRITIQUE_PROMPT
+
+    # GraphRAG Prompts
+    GRAPHRAG_ENTITY_EXTRACTION_PROMPT = """Extract all important entities from the following text.
+For each entity, provide:
+- name: The entity name as it appears in the text
+- type: One of {entity_types}
+- description: A brief description based on the context (1 sentence max)
+
+Return ONLY a valid JSON array with no additional text:
+[{{"name": "...", "type": "...", "description": "..."}}]
+
+If no entities are found, return an empty array: []
+
+Text:
+\"\"\"
+{text}
+\"\"\"
+
+JSON array of entities:"""
+
+    GRAPHRAG_RELATIONSHIP_EXTRACTION_PROMPT = """Analyze the relationships between the given entities based on the text.
+
+Entities to analyze:
+{entities}
+
+Text:
+\"\"\"
+{text}
+\"\"\"
+
+For each pair of entities that have a relationship in the text, provide:
+- source: The source entity name
+- target: The target entity name
+- relation_type: One of {relation_types}
+- confidence: How confident you are (0.0 to 1.0)
+- description: Brief description of the relationship
+
+Return ONLY a valid JSON array with no additional text:
+[{{"source": "...", "target": "...", "relation_type": "...", "confidence": 0.9, "description": "..."}}]
+
+If no relationships are found, return an empty array: []
+
+JSON array of relationships:"""
+
+    GRAPHRAG_CONTEXT_PROMPT = """You are a helpful assistant that answers questions using both document context and knowledge graph information.
+
+The knowledge graph provides structured information about entities and their relationships, which can help you understand connections between concepts.
+
+Use both the document context and knowledge graph context to provide accurate, well-grounded answers. If information conflicts, prefer the document context.
+"""
+
+    @staticmethod
+    def get_graphrag_entity_prompt():
+        return Param.GRAPHRAG_ENTITY_EXTRACTION_PROMPT
+
+    @staticmethod
+    def get_graphrag_relationship_prompt():
+        return Param.GRAPHRAG_RELATIONSHIP_EXTRACTION_PROMPT
+
+    @staticmethod
+    def get_graphrag_context_prompt():
+        return Param.GRAPHRAG_CONTEXT_PROMPT
